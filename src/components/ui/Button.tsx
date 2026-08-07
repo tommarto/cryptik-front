@@ -1,23 +1,41 @@
-import type { ButtonHTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { ButtonSize, ButtonVariant } from '../../constants/ui'
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'ghost'
+  variant?: ButtonVariant
+  size?: ButtonSize
+  icon?: ReactNode
 }
 
-const variants = {
-  primary: 'bg-slate-900 text-white hover:bg-slate-700',
-  ghost: 'bg-transparent text-slate-900 hover:bg-slate-100',
-} as const
+const variants: Record<ButtonVariant, string> = {
+  [ButtonVariant.Primary]: 'bg-indigo-600 text-white hover:bg-indigo-500',
+  [ButtonVariant.Secondary]:
+    'bg-slate-800 text-slate-200 ring-1 ring-slate-700 hover:bg-slate-700',
+  [ButtonVariant.Ghost]:
+    'bg-transparent text-slate-400 hover:bg-slate-800 hover:text-slate-100',
+}
+
+const sizes: Record<ButtonSize, string> = {
+  [ButtonSize.Sm]: 'h-8 gap-1.5 px-3 text-xs',
+  [ButtonSize.Md]: 'h-10 gap-2 px-4 text-sm',
+  [ButtonSize.Icon]: 'size-8',
+}
 
 export function Button({
-  variant = 'primary',
+  variant = ButtonVariant.Primary,
+  size = ButtonSize.Md,
+  icon,
   className = '',
+  children,
   ...props
 }: ButtonProps) {
   return (
     <button
-      className={`rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
-    />
+    >
+      {icon}
+      {children}
+    </button>
   )
 }

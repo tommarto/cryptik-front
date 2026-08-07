@@ -1,14 +1,12 @@
 export class HttpError extends Error {
-  readonly client: string
-  readonly status: number
-  readonly body: unknown
-
-  constructor(message: string, client: string, status: number, body: unknown) {
+  constructor(
+    message: string,
+    readonly client: string,
+    readonly status: number,
+    readonly body: unknown,
+  ) {
     super(message)
     this.name = 'HttpError'
-    this.client = client
-    this.status = status
-    this.body = body
   }
 
   get isNotFound(): boolean {

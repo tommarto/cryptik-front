@@ -1,15 +1,20 @@
-import { createBrowserRouter } from 'react-router-dom'
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Navigate,
+  Route,
+} from 'react-router-dom'
+import { AppRoutes } from './config/routes'
 import { AppLayout } from './components/layout/AppLayout'
-import { HomeScreen } from './screens/home/HomeScreen'
+import { InfiniteTalkScreen } from './screens/lipsync/InfiniteTalkScreen'
 import { NotFoundScreen } from './screens/NotFoundScreen'
 
-export const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <AppLayout />,
-    children: [
-      { index: true, element: <HomeScreen /> },
-      { path: '*', element: <NotFoundScreen /> },
-    ],
-  },
-])
+export const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route path={AppRoutes.Home} element={<AppLayout />}>
+      <Route index element={<Navigate to={AppRoutes.InfiniteTalk} replace />} />
+      <Route path="lipsync/infinitetalk" element={<InfiniteTalkScreen />} />
+      <Route path="*" element={<NotFoundScreen />} />
+    </Route>,
+  ),
+)
