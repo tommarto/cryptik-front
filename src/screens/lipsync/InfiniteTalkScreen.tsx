@@ -41,10 +41,10 @@ export function InfiniteTalkScreen() {
       <header className="flex items-start justify-between gap-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-50">
-            Crear Nuevo Proyecto
+            Cryptik - Lipsync Tool
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            Configura los parámetros iniciales para tu generación creativa.
+            Genera lipsyncs a partir de una imagen, un audio y un prompt.
           </p>
         </div>
 
