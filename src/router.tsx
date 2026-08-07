@@ -6,15 +6,25 @@ import {
 } from 'react-router-dom'
 import { AppRoutes } from './config/routes'
 import { AppLayout } from './components/layout/AppLayout'
+import { AuthLayout } from './components/layout/AuthLayout'
 import { InfiniteTalkScreen } from './screens/lipsync/InfiniteTalkScreen'
+import { LoginScreen } from './screens/auth/LoginScreen'
 import { NotFoundScreen } from './screens/NotFoundScreen'
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path={AppRoutes.Home} element={<AppLayout />}>
-      <Route index element={<Navigate to={AppRoutes.InfiniteTalk} replace />} />
-      <Route path="lipsync/infinitetalk" element={<InfiniteTalkScreen />} />
-      <Route path="*" element={<NotFoundScreen />} />
-    </Route>,
+    <>
+      {/* Sin sesión: fondo con degradado, sin navegación. */}
+      <Route element={<AuthLayout />}>
+        <Route path={AppRoutes.Login} element={<LoginScreen />} />
+      </Route>
+
+      {/* Con sesión. */}
+      <Route path={AppRoutes.Home} element={<AppLayout />}>
+        <Route index element={<Navigate to={AppRoutes.InfiniteTalk} replace />} />
+        <Route path="lipsync/infinitetalk" element={<InfiniteTalkScreen />} />
+        <Route path="*" element={<NotFoundScreen />} />
+      </Route>
+    </>,
   ),
 )

@@ -5,5 +5,6 @@
  */
 export enum AppRoutes {
   Home = '/',
+  Login = '/login',
   InfiniteTalk = '/lipsync/infinitetalk',
 }

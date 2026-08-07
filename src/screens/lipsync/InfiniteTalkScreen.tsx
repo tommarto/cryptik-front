@@ -3,7 +3,7 @@ import { RefreshCw, Sparkles } from 'lucide-react'
 import { Alert } from '../../components/ui/Alert'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
-import { Progress } from '../../components/ui/Progress'
+import { Spinner } from '../../components/ui/Spinner'
 import { Textarea } from '../../components/ui/Textarea'
 import { Dropzone } from '../../components/composites/Dropzone'
 import {
@@ -12,9 +12,11 @@ import {
   ButtonVariant,
   DropzoneVariant,
 } from '../../constants/ui'
+import { useElapsed } from '../../hooks/useElapsed'
 import { jobService } from '../../services/jobService'
 import { JobCard } from './JobCard'
 import type { Job } from '../../types/job'
+import { formatElapsed } from '../../utils/time'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const MAX_AUDIO_BYTES = 20 * 1024 * 1024
@@ -151,23 +153,26 @@ export function InfiniteTalkScreen() {
 }
 
 function JobPreview({ job, className }: { job: Job; className?: string }) {
+  const elapsed = useElapsed(job.startedAt, job.finishedAt)
+
   return (
     <Card title={`#${job.id} · Vista Previa`} className={className}>
       <div className="flex h-full flex-col items-center justify-center rounded-lg border border-slate-800 bg-slate-950/40 px-6 py-10 text-center">
-        <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-indigo-500/15">
+        <Spinner>
           <Sparkles className="size-5 text-indigo-400" />
-        </div>
+        </Spinner>
 
-        <p className="text-sm font-medium text-slate-200">
+        <p className="mt-4 text-sm font-medium text-slate-200">
           Generando Contenido...
         </p>
         <p className="mt-1 text-xs text-slate-500">
           Sintetizando audio y renderizando frames
         </p>
 
-        <div className="mt-5 w-full max-w-xs">
-          <Progress value={job.progress} hint="Estimado: 12s" />
-        </div>
+        <p className="mt-5 font-mono text-lg text-slate-300">
+          {formatElapsed(elapsed)}
+        </p>
+        <p className="text-[11px] text-slate-600">Tiempo transcurrido</p>
       </div>
     </Card>
   )

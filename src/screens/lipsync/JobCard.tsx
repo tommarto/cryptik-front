@@ -1,7 +1,9 @@
 import { CheckCircle2, CircleAlert, Clock, Loader } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge'
 import { BadgeTone } from '../../constants/ui'
+import { useElapsed } from '../../hooks/useElapsed'
 import { JobStatus, type Job } from '../../types/job'
+import { formatClock, formatElapsed } from '../../utils/time'
 
 type JobCardProps = {
   job: Job
@@ -34,6 +36,7 @@ const statusConfig = {
 
 export function JobCard({ job, selected = false, onSelect }: JobCardProps) {
   const { label, tone, Icon } = statusConfig[job.status]
+  const elapsed = useElapsed(job.startedAt, job.finishedAt)
 
   return (
     <button
@@ -53,18 +56,13 @@ export function JobCard({ job, selected = false, onSelect }: JobCardProps) {
 
       <span className="font-mono text-xs text-slate-300">#{job.id}</span>
 
-      <span className="text-xs text-slate-500">{job.requestedAt}</span>
+      <span className="text-xs text-slate-500">
+        {formatClock(job.requestedAt)}
+      </span>
 
       <span className="font-mono text-xs text-slate-400">
-        {formatElapsed(job.elapsedSeconds)}
+        {formatElapsed(elapsed)}
       </span>
     </button>
   )
-}
-
-function formatElapsed(seconds: number | null): string {
-  if (seconds === null) return '--:--'
-  const minutes = Math.floor(seconds / 60)
-  const rest = seconds % 60
-  return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`
 }

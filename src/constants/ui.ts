@@ -29,6 +29,13 @@ export enum AlertVariant {
   Info = 'info',
 }
 
+export enum BrandOrientation {
+  /** Icono arriba, texto centrado debajo. Para pantallas de auth. */
+  Vertical = 'vertical',
+  /** Icono a la izquierda, texto al lado. Para el sidebar. */
+  Horizontal = 'horizontal',
+}
+
 export enum DropzoneVariant {
   /** Área grande punteada, para el archivo principal. */
   Area = 'area',

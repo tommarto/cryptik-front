@@ -8,8 +8,10 @@ export enum JobStatus {
 export type Job = {
   id: string
   status: JobStatus
+  /** ISO. Cuándo se pidió el trabajo. */
   requestedAt: string
-  /** Segundos transcurridos. `null` mientras sigue en cola. */
-  elapsedSeconds: number | null
-  progress: number
+  /** ISO. Cuándo empezó a ejecutarse. `null` mientras sigue en cola. */
+  startedAt: string | null
+  /** ISO. Cuándo terminó, con éxito o error. `null` si sigue corriendo. */
+  finishedAt: string | null
 }
