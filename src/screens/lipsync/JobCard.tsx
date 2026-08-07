@@ -42,7 +42,7 @@ export function JobCard({ job, selected = false, onSelect }: JobCardProps) {
     <button
       type="button"
       onClick={() => onSelect?.(job)}
-      className={`grid w-full grid-cols-[8rem_6rem_5.5rem_auto] items-center gap-4 rounded-lg border px-4 py-3 text-left transition-colors ${
+      className={`grid w-full grid-cols-[8rem_6rem_5.5rem_auto] items-center gap-4 rounded-lg border px-3 py-2 text-left transition-colors ${
         selected
           ? 'border-indigo-500/50 bg-indigo-500/10'
           : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
@@ -54,13 +54,13 @@ export function JobCard({ job, selected = false, onSelect }: JobCardProps) {
         </Badge>
       </span>
 
-      <span className="font-mono text-xs text-slate-300">#{job.id}</span>
+      <span className="font-mono text-[11px] text-slate-300">#{job.id}</span>
 
-      <span className="text-xs text-slate-500">
+      <span className="text-[11px] text-slate-500">
         {formatClock(job.requestedAt)}
       </span>
 
-      <span className="font-mono text-xs text-slate-400">
+      <span className="font-mono text-[11px] text-slate-400">
         {formatElapsed(elapsed)}
       </span>
     </button>

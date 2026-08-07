@@ -20,7 +20,9 @@ export function Card({ title, action, children, className = '' }: CardProps) {
           {action}
         </header>
       )}
-      <div className="flex-1 p-5">{children}</div>
+      {/* `min-h-0` deja que el cuerpo se achique por debajo de su contenido
+          cuando la card tiene alto fijo, para que adentro se pueda scrollear. */}
+      <div className="min-h-0 flex-1 p-5">{children}</div>
     </section>
   )
 }

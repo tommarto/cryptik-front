@@ -122,7 +122,9 @@ export function InfiniteTalkScreen() {
         </div>
 
         <div className="flex flex-col gap-6">
+          {/* Alto acotado: la cola scrollea adentro en vez de crecer. */}
           <Card
+            className="lg:h-56"
             title="Cola de Trabajos"
             action={
               <Button
@@ -133,7 +135,7 @@ export function InfiniteTalkScreen() {
               />
             }
           >
-            <div className="flex flex-col gap-2">
+            <div className="flex h-full flex-col gap-2 overflow-y-auto">
               {jobs.map((job) => (
                 <JobCard
                   key={job.id}
@@ -145,7 +147,11 @@ export function InfiniteTalkScreen() {
             </div>
           </Card>
 
-          {selected && <JobPreview job={selected} className="flex-1" />}
+          {/* El resultado es un video vertical: la preview necesita alto propio,
+              no solo el sobrante del formulario. */}
+          {selected && (
+            <JobPreview job={selected} className="flex-1 lg:min-h-[36rem]" />
+          )}
         </div>
       </div>
     </div>
