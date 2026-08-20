@@ -1,9 +1,14 @@
 import { Outlet } from 'react-router-dom'
+import { GradientBackdrop } from './GradientBackdrop'
 
 export function AppLayout() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200">
-      <Outlet />
+    <div className="relative min-h-screen bg-slate-950 text-slate-200">
+      <GradientBackdrop />
+
+      <div className="relative">
+        <Outlet />
+      </div>
     </div>
   )
 }

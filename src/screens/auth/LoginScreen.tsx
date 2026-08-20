@@ -12,7 +12,7 @@ export function LoginScreen() {
       <div className="flex flex-col gap-6 py-2">
         <Brand
           name="Cryptik"
-          tagline="Motor Creativo"
+          tagline="Creative Engine"
           imageSrc={brandLogo}
           orientation={BrandOrientation.Vertical}
         />
@@ -20,7 +20,7 @@ export function LoginScreen() {
         <Separator />
 
         <p className="text-center text-xs text-slate-400">
-          Iniciá sesión para continuar a tu espacio de trabajo.
+          Login to access your workspace.
         </p>
 
         <Button
@@ -28,7 +28,7 @@ export function LoginScreen() {
           className="w-full"
           icon={<GoogleIcon />}
         >
-          Iniciar sesión con Google
+          Login with your company account
         </Button>
       </div>
     </Card>
