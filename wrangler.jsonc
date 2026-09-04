@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cryptik-front",
+  "compatibility_date": "2026-09-04",
+
+  // Worker sin código propio: solo sirve los archivos estáticos del build.
+  "assets": {
+    "directory": "./dist",
+
+    // El routing lo resuelve React Router en el browser, así que cualquier ruta
+    // que no matchee un archivo devuelve index.html con 200. Sin esto, entrar
+    // directo a /lipsync/infinitetalk o refrescar ahí da 404.
+    "not_found_handling": "single-page-application"
+  }
+}
