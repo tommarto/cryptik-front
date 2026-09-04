@@ -1,0 +1,4 @@
+# SPA: el routing lo resuelve React Router en el browser, así que cualquier ruta
+# tiene que servir el index. Sin esto, entrar directo a /lipsync/infinitetalk o
+# refrescar ahí devuelve 404, porque Cloudflare busca un archivo en esa ruta.
+/*  /index.html  200

@@ -2,46 +2,50 @@ import { CheckCircle2, CircleAlert, Clock, Loader } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge'
 import { BadgeTone } from '../../constants/ui'
 import { useElapsed } from '../../hooks/useElapsed'
-import { JobStatus, type Job } from '../../types/job'
+import { ExecutionStatus, type WorkflowExecution } from '../../types/workflow'
 import { formatClock, formatElapsed } from '../../utils/time'
 
-type JobCardProps = {
-  job: Job
+type ExecutionCardProps = {
+  execution: WorkflowExecution
   selected?: boolean
-  onSelect?: (job: Job) => void
+  onSelect?: (execution: WorkflowExecution) => void
 }
 
 const statusConfig = {
-  [JobStatus.Processing]: {
+  [ExecutionStatus.Processing]: {
     label: 'En Proceso',
     tone: BadgeTone.Info,
     Icon: Loader,
   },
-  [JobStatus.Queued]: {
+  [ExecutionStatus.Queued]: {
     label: 'En Cola',
     tone: BadgeTone.Warning,
     Icon: Clock,
   },
-  [JobStatus.Completed]: {
+  [ExecutionStatus.Completed]: {
     label: 'Completado',
     tone: BadgeTone.Success,
     Icon: CheckCircle2,
   },
-  [JobStatus.Error]: {
+  [ExecutionStatus.Error]: {
     label: 'Error',
     tone: BadgeTone.Danger,
     Icon: CircleAlert,
   },
 } as const
 
-export function JobCard({ job, selected = false, onSelect }: JobCardProps) {
-  const { label, tone, Icon } = statusConfig[job.status]
-  const elapsed = useElapsed(job.startedAt, job.finishedAt)
+export function ExecutionCard({
+  execution,
+  selected = false,
+  onSelect,
+}: ExecutionCardProps) {
+  const { label, tone, Icon } = statusConfig[execution.status]
+  const elapsed = useElapsed(execution.startedAt, execution.finishedAt)
 
   return (
     <button
       type="button"
-      onClick={() => onSelect?.(job)}
+      onClick={() => onSelect?.(execution)}
       className={`grid w-full grid-cols-[8rem_6rem_5.5rem_auto] items-center gap-4 rounded-lg border px-3 py-2 text-left transition-colors ${
         selected
           ? 'border-indigo-500/50 bg-indigo-500/10'
@@ -54,10 +58,12 @@ export function JobCard({ job, selected = false, onSelect }: JobCardProps) {
         </Badge>
       </span>
 
-      <span className="font-mono text-[11px] text-slate-300">#{job.id}</span>
+      <span className="font-mono text-[11px] text-slate-300">
+        #{execution.id.slice(0, 8)}
+      </span>
 
       <span className="text-[11px] text-slate-500">
-        {formatClock(job.requestedAt)}
+        {formatClock(execution.requestedAt)}
       </span>
 
       <span className="font-mono text-[11px] text-slate-400">

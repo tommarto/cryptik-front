@@ -12,30 +12,54 @@ import {
   ButtonVariant,
   DropzoneVariant,
 } from '../../constants/ui'
+import { useCreateLipsync, useExecutions } from '../../hooks/useExecutions'
 import { useElapsed } from '../../hooks/useElapsed'
-import { jobService } from '../../services/jobService'
-import { JobCard } from './JobCard'
-import type { Job } from '../../types/job'
+import { useVideoUrl } from '../../hooks/useVideoUrl'
+import {
+  MAX_AUDIO_BYTES,
+  MAX_COMBINED_BYTES,
+  MAX_IMAGE_BYTES,
+} from '../../services/workflowService'
+import { ExecutionStatus, type WorkflowExecution } from '../../types/workflow'
+import { describeRejection, formatBytes } from '../../utils/file'
 import { formatElapsed } from '../../utils/time'
-
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024
-const MAX_AUDIO_BYTES = 20 * 1024 * 1024
+import { ExecutionCard } from './ExecutionCard'
 
 export function InfiniteTalkScreen() {
   const [image, setImage] = useState<File | null>(null)
   const [audio, setAudio] = useState<File | null>(null)
   const [prompt, setPrompt] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const jobs = jobService.list()
-  const [selectedId, setSelectedId] = useState(jobService.getActive()?.id)
-  const selected = jobs.find((job) => job.id === selectedId)
+  const { data: executions = [], isPending, isFetching, refetch } = useExecutions()
+  const createLipsync = useCreateLipsync()
+
+  const selected =
+    executions.find((execution) => execution.id === selectedId) ?? executions[0]
+
+  const oversized =
+    image && audio && image.size + audio.size > MAX_COMBINED_BYTES
 
   function clear() {
     setImage(null)
     setAudio(null)
     setPrompt('')
     setError(null)
+  }
+
+  async function generate() {
+    if (!image || !audio) return
+
+    setError(null)
+
+    try {
+      const execution = await createLipsync.mutateAsync({ image, audio, prompt })
+      setSelectedId(execution.id)
+      clear()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not start the generation.')
+    }
   }
 
   return (
@@ -76,14 +100,18 @@ export function InfiniteTalkScreen() {
                 label="Imagen Base"
                 variant={DropzoneVariant.Area}
                 placeholder="Arrastrá y soltá tu imagen aquí, o explorá"
-                hint="Formatos soportados: PNG, JPG (Max 5MB)"
-                accept={{ 'image/png': ['.png'], 'image/jpeg': ['.jpg'] }}
+                hint={`PNG, JPG o WEBP. Entre imagen y audio, hasta ${formatBytes(MAX_COMBINED_BYTES)}.`}
+                accept={{
+                  'image/png': ['.png'],
+                  'image/jpeg': ['.jpg', '.jpeg'],
+                  'image/webp': ['.webp'],
+                }}
                 maxSize={MAX_IMAGE_BYTES}
                 file={image}
                 onFileAccepted={setImage}
-                onFileRejected={() =>
+                onFileRejected={(rejection) =>
                   setError(
-                    'La imagen no cumple con el formato o el tamaño permitido.',
+                    `${describeRejection(rejection, MAX_IMAGE_BYTES)} Se aceptan PNG y JPG.`,
                   )
                 }
               />
@@ -92,16 +120,25 @@ export function InfiniteTalkScreen() {
                 label="Archivo de Audio"
                 variant={DropzoneVariant.Compact}
                 placeholder="Seleccionar audio..."
+                hint={`MP3, WAV o M4A. Entre los dos, hasta ${formatBytes(MAX_COMBINED_BYTES)}.`}
                 accept={{ 'audio/*': ['.mp3', '.wav', '.m4a'] }}
                 maxSize={MAX_AUDIO_BYTES}
                 file={audio}
                 onFileAccepted={setAudio}
-                onFileRejected={() =>
+                onFileRejected={(rejection) =>
                   setError(
-                    'El archivo de audio subido no cumple con los requisitos mínimos de duración (3 segundos). Por favor, intentá con un archivo diferente.',
+                    `${describeRejection(rejection, MAX_AUDIO_BYTES)} Se aceptan MP3, WAV y M4A.`,
                   )
                 }
               />
+
+              {oversized && (
+                <Alert variant={AlertVariant.Error} title="Archivos demasiado grandes">
+                  Entre los dos suman {formatBytes(image.size + audio.size)} y el
+                  máximo es {formatBytes(MAX_COMBINED_BYTES)}. Probá con un audio
+                  más corto o comprimido.
+                </Alert>
+              )}
 
               <Textarea
                 label="Prompt de Imagen"
@@ -112,17 +149,25 @@ export function InfiniteTalkScreen() {
               />
 
               <div className="mt-auto flex justify-end gap-3">
-                <Button variant={ButtonVariant.Ghost} onClick={clear}>
+                <Button
+                  variant={ButtonVariant.Ghost}
+                  onClick={clear}
+                  disabled={createLipsync.isPending}
+                >
                   Limpiar
                 </Button>
-                <Button disabled={!image || !audio}>Generar →</Button>
+                <Button
+                  onClick={generate}
+                  disabled={!image || !audio || Boolean(oversized) || createLipsync.isPending}
+                >
+                  {createLipsync.isPending ? 'Enviando…' : 'Generar →'}
+                </Button>
               </div>
             </div>
           </Card>
         </div>
 
         <div className="flex flex-col gap-6">
-          {/* Alto acotado: la cola scrollea adentro en vez de crecer. */}
           <Card
             className="lg:h-56"
             title="Cola de Trabajos"
@@ -131,54 +176,98 @@ export function InfiniteTalkScreen() {
                 variant={ButtonVariant.Ghost}
                 size={ButtonSize.Icon}
                 aria-label="Actualizar cola"
-                icon={<RefreshCw className="size-4" />}
+                onClick={() => void refetch()}
+                disabled={isFetching}
+                icon={
+                  <RefreshCw className={`size-4 ${isFetching ? 'animate-spin' : ''}`} />
+                }
               />
             }
           >
-            <div className="flex h-full flex-col gap-2 overflow-y-auto">
-              {jobs.map((job) => (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  selected={job.id === selectedId}
-                  onSelect={(picked) => setSelectedId(picked.id)}
-                />
-              ))}
-            </div>
+            {isPending ? (
+              <div className="flex h-full items-center justify-center">
+                <Spinner className="size-6" />
+              </div>
+            ) : executions.length === 0 ? (
+              <p className="text-xs text-slate-500">
+                Todavía no generaste nada. Subí una imagen y un audio para empezar.
+              </p>
+            ) : (
+              <div className="flex h-full flex-col gap-2 overflow-y-auto">
+                {executions.map((execution) => (
+                  <ExecutionCard
+                    key={execution.id}
+                    execution={execution}
+                    selected={execution.id === selected?.id}
+                    onSelect={(picked) => setSelectedId(picked.id)}
+                  />
+                ))}
+              </div>
+            )}
           </Card>
 
-          {/* El resultado es un video vertical: la preview necesita alto propio,
-              no solo el sobrante del formulario. */}
-          {selected && (
-            <JobPreview job={selected} className="flex-1 lg:min-h-[36rem]" />
-          )}
+          {selected && <ExecutionPreview execution={selected} className="flex-1 lg:min-h-[36rem]" />}
         </div>
       </div>
     </div>
   )
 }
 
-function JobPreview({ job, className }: { job: Job; className?: string }) {
-  const elapsed = useElapsed(job.startedAt, job.finishedAt)
+function ExecutionPreview({
+  execution,
+  className,
+}: {
+  execution: WorkflowExecution
+  className?: string
+}) {
+  const elapsed = useElapsed(execution.startedAt, execution.finishedAt)
+  const isDone = execution.status === ExecutionStatus.Completed
+  const { data: videoUrl, isPending: loadingUrl } = useVideoUrl(
+    execution.id,
+    isDone && Boolean(execution.context.s3_path),
+  )
 
   return (
-    <Card title={`#${job.id} · Vista Previa`} className={className}>
+    <Card title={`#${execution.id.slice(0, 8)} · Vista Previa`} className={className}>
       <div className="flex h-full flex-col items-center justify-center rounded-lg border border-slate-800 bg-slate-950/40 px-6 py-10 text-center">
-        <Spinner>
-          <Sparkles className="size-5 text-indigo-400" />
-        </Spinner>
+        {execution.status === ExecutionStatus.Error ? (
+          <>
+            <p className="text-sm font-medium text-red-300">La generación falló</p>
+            <p className="mt-2 max-w-sm text-xs text-slate-500">
+              {execution.errorMessage ?? 'El proveedor no devolvió un detalle.'}
+            </p>
+          </>
+        ) : isDone ? (
+          loadingUrl ? (
+            <Spinner />
+          ) : videoUrl ? (
+            <video
+              src={videoUrl}
+              controls
+              className="max-h-full max-w-full rounded-lg"
+            />
+          ) : (
+            <p className="text-xs text-slate-500">No se pudo cargar el video.</p>
+          )
+        ) : (
+          <>
+            <Spinner>
+              <Sparkles className="size-5 text-indigo-400" />
+            </Spinner>
 
-        <p className="mt-4 text-sm font-medium text-slate-200">
-          Generando Contenido...
-        </p>
-        <p className="mt-1 text-xs text-slate-500">
-          Sintetizando audio y renderizando frames
-        </p>
+            <p className="mt-4 text-sm font-medium text-slate-200">
+              Generando Contenido...
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Sintetizando audio y renderizando frames
+            </p>
 
-        <p className="mt-5 font-mono text-lg text-slate-300">
-          {formatElapsed(elapsed)}
-        </p>
-        <p className="text-[11px] text-slate-600">Tiempo transcurrido</p>
+            <p className="mt-5 font-mono text-lg text-slate-300">
+              {formatElapsed(elapsed)}
+            </p>
+            <p className="text-[11px] text-slate-600">Tiempo transcurrido</p>
+          </>
+        )}
       </div>
     </Card>
   )
