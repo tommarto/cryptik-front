@@ -18,3 +18,12 @@ export function formatClock(iso: string): string {
     hour12: true,
   })
 }
+
+/**
+ * Milisegundos a `mm:ss`. `null` / `undefined` = todavía no lo sabemos: RunPod
+ * reporta estos tiempos recién al cerrar el trabajo.
+ */
+export function formatMillis(millis: number | null | undefined): string {
+  if (millis == null) return '--:--'
+  return formatElapsed(Math.round(millis / 1000))
+}

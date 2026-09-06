@@ -15,15 +15,17 @@ import {
 import { useCreateLipsync, useExecutions } from '../../hooks/useExecutions'
 import { useElapsed } from '../../hooks/useElapsed'
 import { useVideoUrl } from '../../hooks/useVideoUrl'
-import {
-  MAX_AUDIO_BYTES,
-  MAX_COMBINED_BYTES,
-  MAX_IMAGE_BYTES,
-} from '../../services/workflowService'
+import { MAX_AUDIO_BYTES, MAX_IMAGE_BYTES } from '../../services/workflowService'
 import { ExecutionStatus, type WorkflowExecution } from '../../types/workflow'
 import { describeRejection, formatBytes } from '../../utils/file'
 import { formatElapsed } from '../../utils/time'
-import { ExecutionCard } from './ExecutionCard'
+import { EXECUTION_GRID, ExecutionCard } from './ExecutionCard'
+
+const PHASE_LABEL: Record<string, string> = {
+  idle: 'Generar →',
+  uploading: 'Subiendo archivos…',
+  starting: 'Encolando…',
+}
 
 export function InfiniteTalkScreen() {
   const [image, setImage] = useState<File | null>(null)
@@ -37,9 +39,6 @@ export function InfiniteTalkScreen() {
 
   const selected =
     executions.find((execution) => execution.id === selectedId) ?? executions[0]
-
-  const oversized =
-    image && audio && image.size + audio.size > MAX_COMBINED_BYTES
 
   function clear() {
     setImage(null)
@@ -100,7 +99,7 @@ export function InfiniteTalkScreen() {
                 label="Imagen Base"
                 variant={DropzoneVariant.Area}
                 placeholder="Arrastrá y soltá tu imagen aquí, o explorá"
-                hint={`PNG, JPG o WEBP. Entre imagen y audio, hasta ${formatBytes(MAX_COMBINED_BYTES)}.`}
+                hint={`PNG, JPG o WEBP, hasta ${formatBytes(MAX_IMAGE_BYTES)}.`}
                 accept={{
                   'image/png': ['.png'],
                   'image/jpeg': ['.jpg', '.jpeg'],
@@ -120,7 +119,7 @@ export function InfiniteTalkScreen() {
                 label="Archivo de Audio"
                 variant={DropzoneVariant.Compact}
                 placeholder="Seleccionar audio..."
-                hint={`MP3, WAV o M4A. Entre los dos, hasta ${formatBytes(MAX_COMBINED_BYTES)}.`}
+                hint={`MP3, WAV o M4A, hasta ${formatBytes(MAX_AUDIO_BYTES)}.`}
                 accept={{ 'audio/*': ['.mp3', '.wav', '.m4a'] }}
                 maxSize={MAX_AUDIO_BYTES}
                 file={audio}
@@ -131,14 +130,6 @@ export function InfiniteTalkScreen() {
                   )
                 }
               />
-
-              {oversized && (
-                <Alert variant={AlertVariant.Error} title="Archivos demasiado grandes">
-                  Entre los dos suman {formatBytes(image.size + audio.size)} y el
-                  máximo es {formatBytes(MAX_COMBINED_BYTES)}. Probá con un audio
-                  más corto o comprimido.
-                </Alert>
-              )}
 
               <Textarea
                 label="Prompt de Imagen"
@@ -158,9 +149,9 @@ export function InfiniteTalkScreen() {
                 </Button>
                 <Button
                   onClick={generate}
-                  disabled={!image || !audio || Boolean(oversized) || createLipsync.isPending}
+                  disabled={!image || !audio || createLipsync.isPending}
                 >
-                  {createLipsync.isPending ? 'Enviando…' : 'Generar →'}
+                  {PHASE_LABEL[createLipsync.phase ?? 'idle']}
                 </Button>
               </div>
             </div>
@@ -194,6 +185,16 @@ export function InfiniteTalkScreen() {
               </p>
             ) : (
               <div className="flex h-full flex-col gap-2 overflow-y-auto">
+                <div
+                  className={`sticky top-0 grid ${EXECUTION_GRID} bg-slate-900/95 px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-slate-600`}
+                >
+                  <span>Estado</span>
+                  <span>ID</span>
+                  <span>Solicitado</span>
+                  <span>Espera</span>
+                  <span>Ejecución</span>
+                </div>
+
                 {executions.map((execution) => (
                   <ExecutionCard
                     key={execution.id}

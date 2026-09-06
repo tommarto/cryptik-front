@@ -1,20 +1,19 @@
 import { supabase } from '../clients/supabaseClient'
+import { mediaService } from './mediaService'
 import { ExecutionStatus, type WorkflowExecution } from '../types/workflow'
 import type { CreateLipsyncPayload } from '../types/workflow'
-import { toBase64 } from '../utils/file'
+import { readFunctionError } from '../utils/functionError'
 
 /**
- * RunPod corta los payloads de `/run` en 10 MB, y base64 infla un 33%. Con los
- * dos archivos juntos por debajo de 7 MB nunca lo tocamos.
+ * Ya no hay techo de 10 MB: los archivos van del browser a S3 y RunPod los baja
+ * de ahí, así que no viajan en el payload ni pasan por base64. Estos límites son
+ * de sensatez, no una restricción del proveedor.
  */
-/**
- * El techo real es de RunPod: `/run` corta en 10 MiB de payload y base64 infla
- * un 33%, así que entre los dos archivos no se puede pasar de 7.5 MiB reales.
- * Los límites individuales son ese mismo techo: lo que manda es la suma.
- */
-export const MAX_COMBINED_BYTES = Math.floor((10 * 1024 * 1024 * 3) / 4)
-export const MAX_IMAGE_BYTES = MAX_COMBINED_BYTES
-export const MAX_AUDIO_BYTES = MAX_COMBINED_BYTES
+export const MAX_IMAGE_BYTES = 25 * 1024 * 1024
+export const MAX_AUDIO_BYTES = 50 * 1024 * 1024
+
+/** Fases del alta, para que la pantalla pueda decir en cuál está. */
+export type CreatePhase = 'uploading' | 'starting'
 
 type ExecutionRow = {
   id: string
@@ -45,27 +44,31 @@ export const workflowService = {
       .from('workflow_execution')
       .select('id, status, context, error_message, requested_at, started_at, finished_at')
       .order('requested_at', { ascending: false })
+      .limit(50)
 
     if (error) throw new Error(error.message)
     return (data as ExecutionRow[]).map(toExecution)
   },
 
-  createLipsync: async ({
-    image,
-    audio,
-    prompt,
-  }: CreateLipsyncPayload): Promise<WorkflowExecution> => {
-    const [imageBase64, audioBase64] = await Promise.all([
-      toBase64(image),
-      toBase64(audio),
+  /**
+   * Primero los archivos, después la ejecución: el worker los baja de S3 apenas
+   * arranca, así que no puede dispararse antes de que estén verificados.
+   */
+  createLipsync: async (
+    { image, audio, prompt }: CreateLipsyncPayload,
+    onPhase?: (phase: CreatePhase) => void,
+  ): Promise<WorkflowExecution> => {
+    onPhase?.('uploading')
+    const [imageMedia, audioMedia] = await Promise.all([
+      mediaService.upload(image),
+      mediaService.upload(audio),
     ])
 
+    onPhase?.('starting')
     const { data, error } = await supabase.functions.invoke('create-lipsync-execution', {
       body: {
-        image_base64: imageBase64,
-        image_content_type: image.type,
-        audio_base64: audioBase64,
-        audio_content_type: audio.type,
+        imageMediaId: imageMedia.id,
+        audioMediaId: audioMedia.id,
         prompt: prompt.trim() || undefined,
       },
     })
@@ -99,23 +102,4 @@ export const workflowService = {
       void supabase.removeChannel(channel)
     }
   },
-}
-
-/**
- * `functions.invoke` no expone el cuerpo del error, solo el status. El mensaje
- * útil viene en el body, así que hay que leerlo de la respuesta.
- */
-async function readFunctionError(error: unknown): Promise<string> {
-  const context = (error as { context?: Response }).context
-
-  if (context && typeof context.json === 'function') {
-    try {
-      const body = await context.json()
-      if (typeof body?.error === 'string') return body.error
-    } catch {
-      // sin cuerpo JSON: caemos al mensaje genérico
-    }
-  }
-
-  return error instanceof Error ? error.message : 'Unexpected error'
 }

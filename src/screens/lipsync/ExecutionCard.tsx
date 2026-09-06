@@ -3,7 +3,10 @@ import { Badge } from '../../components/ui/Badge'
 import { BadgeTone } from '../../constants/ui'
 import { useElapsed } from '../../hooks/useElapsed'
 import { ExecutionStatus, type WorkflowExecution } from '../../types/workflow'
-import { formatClock, formatElapsed } from '../../utils/time'
+import { formatClock, formatElapsed, formatMillis } from '../../utils/time'
+
+/** Compartido con el encabezado de la cola para que las columnas no se corran. */
+export const EXECUTION_GRID = 'grid-cols-[7.5rem_5rem_4.5rem_4rem_4rem] gap-3'
 
 type ExecutionCardProps = {
   execution: WorkflowExecution
@@ -40,13 +43,20 @@ export function ExecutionCard({
   onSelect,
 }: ExecutionCardProps) {
   const { label, tone, Icon } = statusConfig[execution.status]
-  const elapsed = useElapsed(execution.startedAt, execution.finishedAt)
+  const liveElapsed = useElapsed(execution.startedAt, execution.finishedAt)
+
+  // RunPod reporta los tiempos reales al terminar. Mientras corre, lo único que
+  // tenemos es nuestro propio cronómetro.
+  const done = Boolean(execution.finishedAt)
+  const exec = done
+    ? formatMillis(execution.context.executionTime)
+    : formatElapsed(liveElapsed)
 
   return (
     <button
       type="button"
       onClick={() => onSelect?.(execution)}
-      className={`grid w-full grid-cols-[8rem_6rem_5.5rem_auto] items-center gap-4 rounded-lg border px-3 py-2 text-left transition-colors ${
+      className={`grid w-full ${EXECUTION_GRID} items-center rounded-lg border px-3 py-2 text-left transition-colors ${
         selected
           ? 'border-indigo-500/50 bg-indigo-500/10'
           : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
@@ -66,8 +76,18 @@ export function ExecutionCard({
         {formatClock(execution.requestedAt)}
       </span>
 
-      <span className="font-mono text-[11px] text-slate-400">
-        {formatElapsed(elapsed)}
+      <span
+        className="font-mono text-[11px] text-slate-500 tabular-nums"
+        title="Tiempo en cola en RunPod"
+      >
+        {formatMillis(execution.context.delayTime)}
+      </span>
+
+      <span
+        className="font-mono text-[11px] text-slate-300 tabular-nums"
+        title="Tiempo de ejecución"
+      >
+        {exec}
       </span>
     </button>
   )

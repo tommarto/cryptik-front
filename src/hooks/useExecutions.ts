@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { workflowService } from '../services/workflowService'
+import { workflowService, type CreatePhase } from '../services/workflowService'
 import type { CreateLipsyncPayload } from '../types/workflow'
 
 export const executionKeys = {
@@ -28,12 +28,18 @@ export function useExecutions() {
 
 export function useCreateLipsync() {
   const queryClient = useQueryClient()
+  // Subir los archivos puede tardar, así que la pantalla necesita saber en qué
+  // paso está y no solo que "está cargando".
+  const [phase, setPhase] = useState<CreatePhase | null>(null)
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (payload: CreateLipsyncPayload) =>
-      workflowService.createLipsync(payload),
-    onSuccess: () => {
+      workflowService.createLipsync(payload, setPhase),
+    onSettled: () => {
+      setPhase(null)
       void queryClient.invalidateQueries({ queryKey: executionKeys.all })
     },
   })
+
+  return { ...mutation, phase }
 }

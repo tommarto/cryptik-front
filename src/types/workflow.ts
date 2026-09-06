@@ -12,6 +12,10 @@ export enum ExecutionStatus {
 export type LipsyncContext = {
   prompt?: string | null
   s3_path?: string | null
+  /** Milisegundos en cola en RunPod. Llega recién con el webhook final. */
+  delayTime?: number | null
+  /** Milisegundos de ejecución. Es lo que se factura. */
+  executionTime?: number | null
 }
 
 export type WorkflowExecution = {
