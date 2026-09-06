@@ -55,7 +55,7 @@ export const workflowService = {
    * arranca, así que no puede dispararse antes de que estén verificados.
    */
   createLipsync: async (
-    { image, audio, prompt }: CreateLipsyncPayload,
+    { image, audio, prompt, taskName }: CreateLipsyncPayload,
     onPhase?: (phase: CreatePhase) => void,
   ): Promise<WorkflowExecution> => {
     onPhase?.('uploading')
@@ -70,6 +70,9 @@ export const workflowService = {
         imageMediaId: imageMedia.id,
         audioMediaId: audioMedia.id,
         prompt: prompt.trim() || undefined,
+        // El nombre del audio como default: es lo que el usuario reconoce si no
+        // se molestó en ponerle un nombre a la corrida.
+        name: taskName.trim() || audio.name,
       },
     })
 

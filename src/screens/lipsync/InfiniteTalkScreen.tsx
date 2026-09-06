@@ -3,6 +3,7 @@ import { RefreshCw, Sparkles } from 'lucide-react'
 import { Alert } from '../../components/ui/Alert'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { Input } from '../../components/ui/Input'
 import { Spinner } from '../../components/ui/Spinner'
 import { Textarea } from '../../components/ui/Textarea'
 import { Dropzone } from '../../components/composites/Dropzone'
@@ -30,6 +31,7 @@ const PHASE_LABEL: Record<string, string> = {
 export function InfiniteTalkScreen() {
   const [image, setImage] = useState<File | null>(null)
   const [audio, setAudio] = useState<File | null>(null)
+  const [taskName, setTaskName] = useState('')
   const [prompt, setPrompt] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -43,6 +45,7 @@ export function InfiniteTalkScreen() {
   function clear() {
     setImage(null)
     setAudio(null)
+    setTaskName('')
     setPrompt('')
     setError(null)
   }
@@ -53,7 +56,12 @@ export function InfiniteTalkScreen() {
     setError(null)
 
     try {
-      const execution = await createLipsync.mutateAsync({ image, audio, prompt })
+      const execution = await createLipsync.mutateAsync({
+        image,
+        audio,
+        prompt,
+        taskName,
+      })
       setSelectedId(execution.id)
       clear()
     } catch (cause) {
@@ -95,6 +103,14 @@ export function InfiniteTalkScreen() {
 
           <Card title="Parámetros de Entrada" className="flex-1">
             <div className="flex h-full flex-col gap-5">
+              <Input
+                label="Nombre"
+                value={taskName}
+                onChange={(event) => setTaskName(event.target.value)}
+                placeholder="Opcional — si lo dejás vacío usamos el nombre del audio"
+                maxLength={120}
+              />
+
               <Dropzone
                 label="Imagen Base"
                 variant={DropzoneVariant.Area}
@@ -188,8 +204,8 @@ export function InfiniteTalkScreen() {
                 <div
                   className={`sticky top-0 grid ${EXECUTION_GRID} bg-slate-900/95 px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-slate-600`}
                 >
+                  <span>Nombre</span>
                   <span>Estado</span>
-                  <span>ID</span>
                   <span>Solicitado</span>
                   <span>Espera</span>
                   <span>Ejecución</span>

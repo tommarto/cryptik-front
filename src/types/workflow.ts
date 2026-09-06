@@ -10,6 +10,8 @@ export enum ExecutionStatus {
  * workflow. Para lipsync son estos campos.
  */
 export type LipsyncContext = {
+  /** Etiqueta para leer, no un identificador: puede repetirse entre corridas. */
+  name?: string | null
   prompt?: string | null
   s3_path?: string | null
   /** Milisegundos en cola en RunPod. Llega recién con el webhook final. */
@@ -32,4 +34,6 @@ export type CreateLipsyncPayload = {
   image: File
   audio: File
   prompt: string
+  /** Si viene vacío, se usa el nombre del archivo de audio. */
+  taskName: string
 }
