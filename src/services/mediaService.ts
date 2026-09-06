@@ -1,5 +1,6 @@
 import { supabase } from '../clients/supabaseClient'
 import { readFunctionError } from '../utils/functionError'
+import { makeThumbnail } from '../utils/image'
 
 export enum MediaStatus {
   Pending = 'pending',
@@ -29,6 +30,18 @@ export function normalizeContentType(type: string): string {
   return CONTENT_TYPE_ALIASES[type] ?? type
 }
 
+async function put(url: string, body: Blob, contentType: string, label: string) {
+  const response = await fetch(url, {
+    method: 'PUT',
+    body,
+    headers: { 'Content-Type': contentType },
+  })
+
+  if (!response.ok) {
+    throw new Error(`No se pudo subir "${label}" (${response.status}).`)
+  }
+}
+
 export const mediaService = {
   /**
    * Sube un archivo en tres pasos: pedir la firma, subir a S3, y confirmar.
@@ -44,14 +57,18 @@ export const mediaService = {
     )
     if (createError) throw new Error(await readFunctionError(createError))
 
-    const response = await fetch(created.uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: { 'Content-Type': file.type },
-    })
-    if (!response.ok) {
-      throw new Error(`No se pudo subir "${file.name}" (${response.status}).`)
+    // Las imágenes suben dos objetos: el original y su miniatura. La función
+    // devuelve la segunda URL solo cuando corresponde.
+    const uploads = [put(created.uploadUrl, file, file.type, file.name)]
+
+    if (created.thumbnailUploadUrl) {
+      const thumbnail = await makeThumbnail(file)
+      uploads.push(
+        put(created.thumbnailUploadUrl, thumbnail, 'image/jpeg', `${file.name} (miniatura)`),
+      )
     }
+
+    await Promise.all(uploads)
 
     const { data: verified, error: verifyError } = await supabase.functions.invoke(
       'verify-media',

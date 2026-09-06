@@ -2,15 +2,14 @@ import { useQuery } from '@tanstack/react-query'
 import { workflowService } from '../services/workflowService'
 
 /**
- * La URL viene firmada a 5 minutos, así que se re-pide sola antes de vencer en
- * vez de quedar cacheada hasta romperse.
+ * La URL viene firmada a un día, así que alcanza con cachearla: no hace falta
+ * renovarla en background mientras la pestaña está abierta.
  */
 export function useVideoUrl(executionId: string | null, enabled: boolean) {
   return useQuery({
     queryKey: ['video-url', executionId],
     queryFn: () => workflowService.getVideoUrl(executionId!),
     enabled: Boolean(executionId) && enabled,
-    staleTime: 4 * 60_000,
-    refetchInterval: 4 * 60_000,
+    staleTime: 12 * 60 * 60_000,
   })
 }
