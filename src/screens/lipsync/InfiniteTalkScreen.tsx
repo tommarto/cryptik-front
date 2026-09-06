@@ -204,11 +204,12 @@ export function InfiniteTalkScreen() {
                 <div
                   className={`sticky top-0 grid ${EXECUTION_GRID} bg-slate-900/95 px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-slate-600`}
                 >
+                  <span>ID</span>
                   <span>Nombre</span>
                   <span>Estado</span>
-                  <span>Solicitado</span>
+                  <span>Pedido</span>
                   <span>Espera</span>
-                  <span>Ejecución</span>
+                  <span>Ejec.</span>
                 </div>
 
                 {executions.map((execution) => (

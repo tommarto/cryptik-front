@@ -9,8 +9,8 @@ import { readFunctionError } from '../utils/functionError'
  * de ahí, así que no viajan en el payload ni pasan por base64. Estos límites son
  * de sensatez, no una restricción del proveedor.
  */
-export const MAX_IMAGE_BYTES = 25 * 1024 * 1024
-export const MAX_AUDIO_BYTES = 50 * 1024 * 1024
+export const MAX_IMAGE_BYTES = 100 * 1024 * 1024
+export const MAX_AUDIO_BYTES = 100 * 1024 * 1024
 
 /** Fases del alta, para que la pantalla pueda decir en cuál está. */
 export type CreatePhase = 'uploading' | 'starting'

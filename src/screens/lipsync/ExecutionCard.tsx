@@ -6,7 +6,8 @@ import { ExecutionStatus, type WorkflowExecution } from '../../types/workflow'
 import { formatClock, formatElapsed, formatMillis } from '../../utils/time'
 
 /** Compartido con el encabezado de la cola para que las columnas no se corran. */
-export const EXECUTION_GRID = 'grid-cols-[1fr_7.5rem_4.5rem_4rem_4rem] gap-3'
+export const EXECUTION_GRID =
+  'grid-cols-[3.75rem_1fr_6.75rem_3.75rem_2.75rem_2.75rem] gap-2'
 
 type ExecutionCardProps = {
   execution: WorkflowExecution
@@ -62,11 +63,15 @@ export function ExecutionCard({
           : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
       }`}
     >
+      <span className="font-mono text-[11px] text-slate-500">
+        #{execution.id.slice(0, 6)}
+      </span>
+
       <span
         className="truncate text-[11px] text-slate-200"
         title={execution.context.name ?? undefined}
       >
-        {execution.context.name ?? `#${execution.id.slice(0, 8)}`}
+        {execution.context.name ?? '—'}
       </span>
 
       <span className="justify-self-start">
