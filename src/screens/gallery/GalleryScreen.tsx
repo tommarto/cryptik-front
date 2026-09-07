@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CheckboxSelect } from "../../components/composites/CheckboxSelect";
 import { Modal } from "../../components/composites/Modal";
 import { Spinner } from "../../components/ui/Spinner";
@@ -9,6 +9,12 @@ import {
   MediaType,
   type WorkflowExecution,
 } from "../../types/workflow";
+import {
+  ColumnsSlider,
+  DEFAULT_COLUMNS,
+  MAX_COLUMNS,
+  MIN_COLUMNS,
+} from "./ColumnsSlider";
 import { GalleryOverlay } from "./GalleryOverlay";
 import { FALLBACK_ICON } from "./fallbackIcons";
 
@@ -17,6 +23,8 @@ const FORMAT_OPTIONS = [
   { value: MediaType.Image, label: "Imagen" },
   { value: MediaType.Audio, label: "Audio" },
 ];
+
+const COLUMNS_STORAGE_KEY = "gallery:columns";
 
 const STATUS_OPTIONS = [
   { value: ExecutionStatus.Completed, label: "Listo" },
@@ -31,6 +39,28 @@ export function GalleryScreen() {
   const [statuses, setStatuses] = useState<ExecutionStatus[]>([]);
   const [userIds, setUserIds] = useState<string[]>([]);
   const [opened, setOpened] = useState<WorkflowExecution | null>(null);
+
+  // Es una preferencia de visualización, no estado de la sesión: se recuerda
+  // entre recargas igual que el colapso del sidebar.
+  const [columns, setColumns] = useState(() => {
+    try {
+      const stored = Number(localStorage.getItem(COLUMNS_STORAGE_KEY));
+      return stored >= MIN_COLUMNS && stored <= MAX_COLUMNS
+        ? stored
+        : DEFAULT_COLUMNS;
+    } catch {
+      return DEFAULT_COLUMNS;
+    }
+  });
+
+  function changeColumns(next: number) {
+    setColumns(next);
+    try {
+      localStorage.setItem(COLUMNS_STORAGE_KEY, String(next));
+    } catch {
+      // modo privado o storage bloqueado: no se recuerda, no importa
+    }
+  }
 
   // Sin selección = sin filtro. Es lo que espera alguien que destilda todo:
   // ver todo, no ver nada. Y van a la consulta, no acá: filtrar del lado del
@@ -111,7 +141,13 @@ export function GalleryScreen() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* En mobile la grilla es de dos columnas fijas, así que el control
+              no tendría nada que hacer. */}
+          <div className="hidden sm:block">
+            <ColumnsSlider columns={columns} onChange={changeColumns} />
+          </div>
+
           <CheckboxSelect
             label="Tipo"
             options={typeOptions}
@@ -159,7 +195,14 @@ export function GalleryScreen() {
           {/* Cuatro por fila, celdas iguales. Sin fondo propio: por el gap se
               ve el degradado de la página, que es lo que separa las celdas sin
               pintar bordes en cada una. */}
-          <div className="grid grid-cols-2 gap-[3px] sm:grid-cols-4">
+          {/* La cantidad de columnas entra por variable CSS y no por una clase
+              tipo `grid-cols-${n}`: Tailwind genera las clases escaneando el
+              código, así que una armada en runtime nunca existiría en el CSS.
+              Mobile queda en dos fijas. */}
+          <div
+            className="grid grid-cols-2 gap-[3px] sm:grid-cols-[repeat(var(--gallery-columns),minmax(0,1fr))]"
+            style={{ "--gallery-columns": columns } as CSSProperties}
+          >
             {photos.map(({ src, execution }) => {
               const Fallback = FALLBACK_ICON[execution.resultMediaType];
               const playable = execution.status === ExecutionStatus.Completed;
