@@ -19,15 +19,22 @@ export type Thumbnail = {
   height: number | null
 }
 
+export type WorkflowTypeOption = {
+  code: string
+  name: string
+}
+
 export type GalleryPage = {
   executions: WorkflowExecution[]
   thumbnails: Record<string, Thumbnail>
   users: GalleryUser[]
+  workflowTypes: WorkflowTypeOption[]
 }
 
 export type GalleryFilters = {
   statuses?: ExecutionStatus[]
   mediaTypes?: MediaType[]
+  workflowTypeCodes?: string[]
   userIds?: string[]
 }
 
@@ -40,7 +47,13 @@ type Row = {
   requested_at: string
   started_at: string | null
   finished_at: string | null
-  workflow?: { workflow_type?: { result_media_type?: MediaType } | null } | null
+  workflow?: {
+    workflow_type?: {
+      code?: string
+      name?: string
+      result_media_type?: MediaType
+    } | null
+  } | null
 }
 
 /**
@@ -67,6 +80,7 @@ export const galleryService = {
         status: row.status,
         resultMediaType:
           row.workflow?.workflow_type?.result_media_type ?? MediaType.Video,
+        workflowTypeCode: row.workflow?.workflow_type?.code,
         context: (row.context ?? {}) as WorkflowExecution['context'],
         errorMessage: row.error_message,
         requestedAt: row.requested_at,
@@ -75,6 +89,7 @@ export const galleryService = {
       })),
       thumbnails: data.thumbnails as Record<string, Thumbnail>,
       users: data.users as GalleryUser[],
+      workflowTypes: data.workflowTypes as WorkflowTypeOption[],
     }
   },
 }

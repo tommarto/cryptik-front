@@ -47,5 +47,6 @@ export function useGallery(filters: GalleryFilters) {
       ...pages.map((page) => page.thumbnails),
     ) as Record<string, Thumbnail>,
     users: pages[0]?.users ?? [],
+    workflowTypes: pages[0]?.workflowTypes ?? [],
   }
 }

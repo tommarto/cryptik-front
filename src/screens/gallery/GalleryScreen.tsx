@@ -12,7 +12,7 @@ import {
 import { GalleryOverlay } from "./GalleryOverlay";
 import { FALLBACK_ICON } from "./fallbackIcons";
 
-const TYPE_OPTIONS = [
+const FORMAT_OPTIONS = [
   { value: MediaType.Video, label: "Video" },
   { value: MediaType.Image, label: "Imagen" },
   { value: MediaType.Audio, label: "Audio" },
@@ -26,7 +26,8 @@ const STATUS_OPTIONS = [
 ];
 
 export function GalleryScreen() {
-  const [types, setTypes] = useState<MediaType[]>([]);
+  const [formats, setFormats] = useState<MediaType[]>([]);
+  const [workflowTypeCodes, setWorkflowTypeCodes] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<ExecutionStatus[]>([]);
   const [userIds, setUserIds] = useState<string[]>([]);
   const [opened, setOpened] = useState<WorkflowExecution | null>(null);
@@ -38,15 +39,23 @@ export function GalleryScreen() {
     executions,
     thumbnails,
     users,
+    workflowTypes,
     isPending,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
   } = useGallery({
-    mediaTypes: types.length ? types : undefined,
+    mediaTypes: formats.length ? formats : undefined,
+    workflowTypeCodes: workflowTypeCodes.length ? workflowTypeCodes : undefined,
     statuses: statuses.length ? statuses : undefined,
     userIds: userIds.length ? userIds : undefined,
   });
+
+  // Las opciones salen de la definición: un workflow nuevo aparece solo.
+  const typeOptions = useMemo(
+    () => workflowTypes.map((type) => ({ value: type.code, label: type.name })),
+    [workflowTypes],
+  );
 
   const userOptions = useMemo(
     () => users.map((user) => ({ value: user.id, label: user.name })),
@@ -105,9 +114,15 @@ export function GalleryScreen() {
         <div className="flex flex-wrap gap-2">
           <CheckboxSelect
             label="Tipo"
-            options={TYPE_OPTIONS}
-            selected={types}
-            onChange={setTypes}
+            options={typeOptions}
+            selected={workflowTypeCodes}
+            onChange={setWorkflowTypeCodes}
+          />
+          <CheckboxSelect
+            label="Formato"
+            options={FORMAT_OPTIONS}
+            selected={formats}
+            onChange={setFormats}
           />
           <CheckboxSelect
             label="Estado"
@@ -130,7 +145,10 @@ export function GalleryScreen() {
         </div>
       ) : executions.length === 0 ? (
         <p className="py-20 text-center text-sm text-slate-500">
-          {types.length || statuses.length || userIds.length
+          {formats.length ||
+          workflowTypeCodes.length ||
+          statuses.length ||
+          userIds.length
             ? "Ningún resultado con esos filtros."
             : "Todavía no generaste nada."}
         </p>

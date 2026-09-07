@@ -36,6 +36,8 @@ export type WorkflowExecution = {
   status: ExecutionStatus
   /** Qué produce este workflow. Sale de la definición, no del resultado. */
   resultMediaType: MediaType
+  /** Qué clase de workflow es: LIPSYNC y los que vengan. */
+  workflowTypeCode?: string
   context: LipsyncContext
   errorMessage: string | null
   requestedAt: string
