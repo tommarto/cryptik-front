@@ -1,7 +1,8 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useDropzone, type Accept, type FileRejection } from 'react-dropzone'
 import { CircleAlert, Image as ImageIcon, FileAudio } from 'lucide-react'
 import { DropzoneVariant } from '../../constants/ui'
+import { makePreviewDataUrl } from '../../utils/image'
 
 type DropzoneProps = {
   label: string
@@ -42,6 +43,36 @@ export function Dropzone({
   const { getRootProps, getInputProps, isDragActive, isDragReject } =
     useDropzone({ accept, maxSize, multiple: false, onDrop })
 
+  // Vista previa del archivo elegido, cuando es una imagen.
+  //
+  // Se guarda junto al `File` que la originó para poder descartarla cuando
+  // cambia el archivo: sin eso, al elegir otra imagen se vería la anterior
+  // hasta que termine de generarse la nueva.
+  const [preview, setPreview] = useState<{ file: File; url: string } | null>(
+    null,
+  )
+
+  useEffect(() => {
+    if (!file?.type.startsWith('image/')) return
+
+    let cancelled = false
+    makePreviewDataUrl(file)
+      .then((url) => {
+        if (!cancelled) setPreview({ file, url })
+      })
+      .catch(() => {
+        // Sin vista previa se sigue viendo el nombre del archivo. Si la imagen
+        // es ilegible de verdad, `makeThumbnail` vuelve a fallar al subir y ahí
+        // sí se le avisa al usuario.
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [file])
+
+  const previewUrl = preview && preview.file === file ? preview.url : null
+
   const invalid = isDragReject || Boolean(error)
   const border = invalid
     ? 'border-red-500/50 bg-red-500/5'
@@ -65,11 +96,23 @@ export function Dropzone({
 
         {variant === DropzoneVariant.Area ? (
           <>
-            <ImageIcon className="mb-3 size-6 text-slate-600" />
-            <p className="text-xs text-slate-400">
+            {previewUrl && !isDragActive ? (
+              <img
+                src={previewUrl}
+                alt={file?.name ?? ''}
+                className="mb-3 max-h-40 rounded-md object-contain"
+              />
+            ) : (
+              <ImageIcon className="mb-3 size-6 text-slate-600" />
+            )}
+            <p className="max-w-full truncate text-xs text-slate-400">
               {isDragActive ? 'Soltá el archivo acá' : file?.name || placeholder}
             </p>
-            {hint && <p className="mt-1 text-[11px] text-slate-600">{hint}</p>}
+            {/* Con la imagen a la vista, repetir los formatos aceptados es
+                ruido: ya se sabe que el archivo entró. */}
+            {hint && !previewUrl && (
+              <p className="mt-1 text-[11px] text-slate-600">{hint}</p>
+            )}
           </>
         ) : (
           <>

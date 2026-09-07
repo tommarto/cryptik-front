@@ -50,3 +50,25 @@ export async function makeThumbnail(file: File): Promise<Thumbnail> {
   if (!blob) throw new Error('No se pudo generar la miniatura.')
   return { blob, width, height }
 }
+
+/**
+ * Data URL de una miniatura, para previsualizar el archivo elegido.
+ *
+ * Pasa por la miniatura y no por el original porque `MAX_IMAGE_BYTES` son
+ * 100 MB, y en base64 eso serían ~133 MB de string en memoria.
+ *
+ * Devuelve un string y no un object URL a propósito. Un object URL hay que
+ * revocarlo, y para que StrictMode no lo deje revocado hay que crearlo dentro
+ * del efecto —monta, limpia y vuelve a montar— lo que obliga a un `setState`
+ * síncrono ahí adentro. Un data URL no tiene ciclo de vida: es texto.
+ */
+export async function makePreviewDataUrl(file: File): Promise<string> {
+  const { blob } = await makeThumbnail(file)
+
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('No se pudo leer la miniatura.'))
+    reader.readAsDataURL(blob)
+  })
+}

@@ -186,6 +186,9 @@ export function InfiniteTalkScreen() {
                   disabled={!image || !audio || createLipsync.isPending}
                 >
                   {PHASE_LABEL[createLipsync.phase ?? 'idle']}
+                  {/* Va como children y no por el prop `icon`, que Button
+                      renderiza antes del texto. El `gap` de Button lo separa. */}
+                  {createLipsync.isPending && <Spinner className="size-4" />}
                 </Button>
               </div>
             </div>
