@@ -12,7 +12,14 @@ const THUMBNAIL_QUALITY = 0.8
  * `uploaded` y la generación no arranca, así que conviene fallar acá con un
  * mensaje claro y no más adelante con un 409.
  */
-export async function makeThumbnail(file: File): Promise<Blob> {
+export type Thumbnail = {
+  blob: Blob
+  /** Dimensiones del ORIGINAL: la miniatura conserva la proporción. */
+  width: number
+  height: number
+}
+
+export async function makeThumbnail(file: File): Promise<Thumbnail> {
   let bitmap: ImageBitmap
   try {
     bitmap = await createImageBitmap(file)
@@ -20,7 +27,8 @@ export async function makeThumbnail(file: File): Promise<Blob> {
     throw new Error(`No se pudo leer "${file.name}" como imagen.`)
   }
 
-  const scale = Math.min(1, THUMBNAIL_MAX_EDGE / Math.max(bitmap.width, bitmap.height))
+  const { width, height } = bitmap
+  const scale = Math.min(1, THUMBNAIL_MAX_EDGE / Math.max(width, height))
 
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(bitmap.width * scale)
@@ -40,5 +48,5 @@ export async function makeThumbnail(file: File): Promise<Blob> {
   )
 
   if (!blob) throw new Error('No se pudo generar la miniatura.')
-  return blob
+  return { blob, width, height }
 }

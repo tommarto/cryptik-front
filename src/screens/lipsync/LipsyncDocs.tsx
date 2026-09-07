@@ -101,7 +101,7 @@ export function LipsyncDocs() {
       <Section title="Límites y detalles">
         <ul className="list-disc space-y-1 pl-4 marker:text-slate-600">
           <li>
-            Cada usuario ve solo sus propios trabajos.
+            En esta pantalla ves solo tus propios trabajos.
           </li>
           <li>
             Un trabajo se puede cerrar la pestaña y seguir corriendo: el

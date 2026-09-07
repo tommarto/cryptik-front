@@ -12,7 +12,9 @@ export function useExecutions() {
 
   const query = useQuery({
     queryKey: executionKeys.all,
-    queryFn: workflowService.list,
+    // Envuelto: pasarlo directo le entregaría el contexto de TanStack como
+    // opciones de listado.
+    queryFn: () => workflowService.list(),
   })
 
   // El webhook actualiza la fila del lado del servidor; Realtime nos avisa y

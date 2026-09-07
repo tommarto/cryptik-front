@@ -1,6 +1,6 @@
 import { supabase } from '../clients/supabaseClient'
 import { mediaService } from './mediaService'
-import { ExecutionStatus, type WorkflowExecution } from '../types/workflow'
+import { ExecutionStatus, MediaType, type WorkflowExecution } from '../types/workflow'
 import type { CreateLipsyncPayload } from '../types/workflow'
 import { readFunctionError } from '../utils/functionError'
 
@@ -23,12 +23,19 @@ type ExecutionRow = {
   requested_at: string
   started_at: string | null
   finished_at: string | null
+  workflow?: { workflow_type?: { result_media_type?: MediaType } | null } | null
 }
+
+const EXECUTION_COLUMNS =
+  'id, status, context, error_message, requested_at, started_at, finished_at, ' +
+  'workflow(workflow_type(result_media_type))'
 
 function toExecution(row: ExecutionRow): WorkflowExecution {
   return {
     id: row.id,
     status: row.status,
+    resultMediaType:
+      row.workflow?.workflow_type?.result_media_type ?? MediaType.Video,
     context: (row.context ?? {}) as WorkflowExecution['context'],
     errorMessage: row.error_message,
     requestedAt: row.requested_at,
@@ -42,12 +49,14 @@ export const workflowService = {
   list: async (): Promise<WorkflowExecution[]> => {
     const { data, error } = await supabase
       .from('workflow_execution')
-      .select('id, status, context, error_message, requested_at, started_at, finished_at')
+      .select(EXECUTION_COLUMNS)
       .order('requested_at', { ascending: false })
       .limit(50)
 
     if (error) throw new Error(error.message)
-    return (data as ExecutionRow[]).map(toExecution)
+    // El cliente no puede inferir la forma de las relaciones embebidas sin los
+    // tipos generados del esquema.
+    return (data as unknown as ExecutionRow[]).map(toExecution)
   },
 
   /**
@@ -80,7 +89,7 @@ export const workflowService = {
     return toExecution(data.execution as ExecutionRow)
   },
 
-  /** URL firmada a pocos minutos. La base guarda el path, nunca la URL. */
+  /** URL firmada del video. La base guarda el path, nunca la URL. */
   getVideoUrl: async (executionId: string): Promise<string> => {
     const { data, error } = await supabase.functions.invoke('get-video-url', {
       body: { executionId },

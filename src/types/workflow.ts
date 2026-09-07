@@ -1,3 +1,9 @@
+export enum MediaType {
+  Image = 'image',
+  Video = 'video',
+  Audio = 'audio',
+}
+
 export enum ExecutionStatus {
   Queued = 'QUEUED',
   Processing = 'PROCESSING',
@@ -18,11 +24,18 @@ export type LipsyncContext = {
   delayTime?: number | null
   /** Milisegundos de ejecución. Es lo que se factura. */
   executionTime?: number | null
+  /** Media de entrada. La miniatura de la galería sale de la imagen. */
+  image_media_id?: string | null
+  audio_media_id?: string | null
 }
 
 export type WorkflowExecution = {
   id: string
+  /** Quién la generó. Solo lo devuelve la galería; en la cola es siempre uno mismo. */
+  userId?: string
   status: ExecutionStatus
+  /** Qué produce este workflow. Sale de la definición, no del resultado. */
+  resultMediaType: MediaType
   context: LipsyncContext
   errorMessage: string | null
   requestedAt: string

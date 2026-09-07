@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import { Sparkles } from 'lucide-react'
+import { LayoutGrid, Sparkles } from 'lucide-react'
 import brandLogo from '../../assets/brand-logo.jpg'
 import { Brand } from '../composites/Brand'
 import { AppRoutes } from '../../config/routes'
@@ -13,6 +13,7 @@ const STORAGE_KEY = 'sidebar:collapsed'
 
 const ITEMS: SidebarItem[] = [
   { label: 'Lipsync', to: AppRoutes.InfiniteTalk, icon: Sparkles },
+  { label: 'Galería', to: AppRoutes.Gallery, icon: LayoutGrid },
 ]
 
 export function AppLayout() {

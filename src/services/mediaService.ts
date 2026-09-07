@@ -51,20 +51,36 @@ export const mediaService = {
    * después.
    */
   upload: async (file: File): Promise<Media> => {
+    const contentType = normalizeContentType(file.type)
+
+    // La miniatura se genera antes de pedir la firma: de ahí salen las
+    // dimensiones, que la galería necesita para armar las filas justificadas.
+    const thumbnail = contentType.startsWith('image/')
+      ? await makeThumbnail(file)
+      : null
+
     const { data: created, error: createError } = await supabase.functions.invoke(
       'create-media-upload',
-      { body: { contentType: normalizeContentType(file.type) } },
+      {
+        body: {
+          contentType,
+          width: thumbnail?.width,
+          height: thumbnail?.height,
+        },
+      },
     )
     if (createError) throw new Error(await readFunctionError(createError))
 
-    // Las imágenes suben dos objetos: el original y su miniatura. La función
-    // devuelve la segunda URL solo cuando corresponde.
     const uploads = [put(created.uploadUrl, file, file.type, file.name)]
 
-    if (created.thumbnailUploadUrl) {
-      const thumbnail = await makeThumbnail(file)
+    if (created.thumbnailUploadUrl && thumbnail) {
       uploads.push(
-        put(created.thumbnailUploadUrl, thumbnail, 'image/jpeg', `${file.name} (miniatura)`),
+        put(
+          created.thumbnailUploadUrl,
+          thumbnail.blob,
+          'image/jpeg',
+          `${file.name} (miniatura)`,
+        ),
       )
     }
 
