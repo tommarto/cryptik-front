@@ -1,7 +1,7 @@
 import { Grid2x2, Grid3x3 } from 'lucide-react'
 
 export const MIN_COLUMNS = 4
-export const MAX_COLUMNS = 7
+export const MAX_COLUMNS = 16
 export const DEFAULT_COLUMNS = 4
 
 /**
@@ -37,7 +37,7 @@ export function ColumnsSlider({
           onChange(MIN_COLUMNS + MAX_COLUMNS - Number(event.target.value))
         }
         aria-label="Tamaño de las miniaturas"
-        className="h-1 w-24 cursor-pointer accent-indigo-500"
+        className="h-1 w-32 cursor-pointer accent-indigo-500"
       />
       <Grid2x2 className="size-3.5 shrink-0 text-slate-500" />
     </div>
