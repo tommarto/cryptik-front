@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/Input'
 import { Spinner } from '../../components/ui/Spinner'
 import { Textarea } from '../../components/ui/Textarea'
 import { Dropzone } from '../../components/composites/Dropzone'
+import { Modal } from '../../components/composites/Modal'
 import {
   AlertVariant,
   ButtonSize,
@@ -21,6 +22,7 @@ import { ExecutionStatus, type WorkflowExecution } from '../../types/workflow'
 import { describeRejection, formatBytes } from '../../utils/file'
 import { formatElapsed } from '../../utils/time'
 import { EXECUTION_GRID, ExecutionCard } from './ExecutionCard'
+import { LipsyncDocs } from './LipsyncDocs'
 
 const PHASE_LABEL: Record<string, string> = {
   idle: 'Generar →',
@@ -35,6 +37,7 @@ export function InfiniteTalkScreen() {
   const [prompt, setPrompt] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [docsOpen, setDocsOpen] = useState(false)
 
   const { data: executions = [], isPending, isFetching, refetch } = useExecutions()
   const createLipsync = useCreateLipsync()
@@ -71,6 +74,14 @@ export function InfiniteTalkScreen() {
 
   return (
     <div className="mx-auto max-w-6xl px-8 py-8">
+      <Modal
+        open={docsOpen}
+        onClose={() => setDocsOpen(false)}
+        title="Cómo funciona el generador de lipsync"
+      >
+        <LipsyncDocs />
+      </Modal>
+
       <header className="flex items-start justify-between gap-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-50">
@@ -81,12 +92,14 @@ export function InfiniteTalkScreen() {
           </p>
         </div>
 
-        <div className="flex shrink-0 gap-2">
-          <Button variant={ButtonVariant.Secondary} size={ButtonSize.Sm}>
-            Documentación
-          </Button>
-          <Button size={ButtonSize.Sm}>Ayuda</Button>
-        </div>
+        <Button
+          variant={ButtonVariant.Secondary}
+          size={ButtonSize.Sm}
+          className="shrink-0"
+          onClick={() => setDocsOpen(true)}
+        >
+          Documentación
+        </Button>
       </header>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
