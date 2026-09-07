@@ -6,8 +6,16 @@ import { ExecutionStatus, type WorkflowExecution } from '../../types/workflow'
 import { formatClock, formatElapsed, formatMillis } from '../../utils/time'
 
 /** Compartido con el encabezado de la cola para que las columnas no se corran. */
+/**
+ * En mobile solo entran nombre y estado: las seis columnas suman más ancho que
+ * la pantalla. El resto se oculta en vez de comprimirse, que las volvería
+ * ilegibles.
+ */
 export const EXECUTION_GRID =
-  'grid-cols-[3.75rem_1fr_6.75rem_3.75rem_2.75rem_2.75rem] gap-2'
+  'grid-cols-[1fr_6.75rem] gap-2 sm:grid-cols-[3.75rem_1fr_6.75rem_3.75rem_2.75rem_2.75rem]'
+
+/** Columnas que solo aparecen con espacio. */
+export const SECONDARY_COLUMN = 'hidden sm:block'
 
 type ExecutionCardProps = {
   execution: WorkflowExecution
@@ -63,7 +71,7 @@ export function ExecutionCard({
           : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
       }`}
     >
-      <span className="font-mono text-[11px] text-slate-500">
+      <span className={`${SECONDARY_COLUMN} font-mono text-[11px] text-slate-500`}>
         #{execution.id.slice(0, 6)}
       </span>
 
@@ -80,19 +88,19 @@ export function ExecutionCard({
         </Badge>
       </span>
 
-      <span className="text-[11px] text-slate-500">
+      <span className={`${SECONDARY_COLUMN} text-[11px] text-slate-500`}>
         {formatClock(execution.requestedAt)}
       </span>
 
       <span
-        className="font-mono text-[11px] text-slate-500 tabular-nums"
+        className={`${SECONDARY_COLUMN} font-mono text-[11px] text-slate-500 tabular-nums`}
         title="Tiempo en cola en RunPod"
       >
         {formatMillis(execution.context.delayTime)}
       </span>
 
       <span
-        className="font-mono text-[11px] text-slate-300 tabular-nums"
+        className={`${SECONDARY_COLUMN} font-mono text-[11px] text-slate-300 tabular-nums`}
         title="Tiempo de ejecución"
       >
         {exec}

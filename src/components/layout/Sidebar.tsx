@@ -16,6 +16,8 @@ type SidebarProps = {
   footer?: ReactNode
   collapsed: boolean
   onToggle: () => void
+  /** Se llama al navegar. En mobile lo usa el layout para cerrar el cajón. */
+  onNavigate?: () => void
 }
 
 export function Sidebar({
@@ -25,13 +27,15 @@ export function Sidebar({
   footer,
   collapsed,
   onToggle,
+  onNavigate,
 }: SidebarProps) {
   return (
     <aside
-      // `sticky` + `h-screen`: la barra se queda en el viewport en vez de
-      // estirarse con la página. Sin esto, su footer termina al fondo del
-      // contenido, fuera de la vista.
-      className={`sticky top-0 flex h-screen shrink-0 flex-col border-r border-slate-800 bg-slate-900/40 transition-[width] duration-200 ${
+      // `sticky` + `h-dvh`: la barra se queda en el viewport en vez de
+      // estirarse con la página. `dvh` y no `vh` porque en mobile `100vh`
+      // incluye la barra de direcciones, y el footer con el logout terminaba
+      // abajo del fold.
+      className={`sticky top-0 flex h-dvh shrink-0 flex-col border-r border-slate-800 bg-slate-900/40 transition-[width] duration-200 ${
         collapsed ? 'w-16' : 'w-60'
       }`}
     >
@@ -58,7 +62,12 @@ export function Sidebar({
           fuera de la pantalla en vez de desbordar acá adentro. */}
       <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3">
         {items.map((item) => (
-          <SidebarLink key={item.to} item={item} collapsed={collapsed} />
+          <SidebarLink
+            key={item.to}
+            item={item}
+            collapsed={collapsed}
+            onNavigate={onNavigate}
+          />
         ))}
       </nav>
 
@@ -75,6 +84,8 @@ function ToggleButton({
 }: {
   collapsed: boolean
   onToggle: () => void
+  /** Se llama al navegar. En mobile lo usa el layout para cerrar el cajón. */
+  onNavigate?: () => void
 }) {
   const Icon = collapsed ? PanelLeftOpen : PanelLeftClose
 
@@ -94,15 +105,18 @@ function ToggleButton({
 function SidebarLink({
   item,
   collapsed,
+  onNavigate,
 }: {
   item: SidebarItem
   collapsed: boolean
+  onNavigate?: () => void
 }) {
   const { icon: Icon, label, to } = item
 
   return (
     <NavLink
       to={to}
+      onClick={onNavigate}
       // Colapsada, el label desaparece y el tooltip nativo lo reemplaza.
       title={collapsed ? label : undefined}
       className={({ isActive }) =>

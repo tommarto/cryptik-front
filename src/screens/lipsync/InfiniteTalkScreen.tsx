@@ -21,7 +21,11 @@ import { MAX_AUDIO_BYTES, MAX_IMAGE_BYTES } from '../../services/workflowService
 import { ExecutionStatus, type WorkflowExecution } from '../../types/workflow'
 import { describeRejection, formatBytes } from '../../utils/file'
 import { formatElapsed } from '../../utils/time'
-import { EXECUTION_GRID, ExecutionCard } from './ExecutionCard'
+import {
+  EXECUTION_GRID,
+  ExecutionCard,
+  SECONDARY_COLUMN,
+} from './ExecutionCard'
 import { LipsyncDocs } from './LipsyncDocs'
 
 const PHASE_LABEL: Record<string, string> = {
@@ -73,7 +77,7 @@ export function InfiniteTalkScreen() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-8 py-8">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
       <Modal
         open={docsOpen}
         onClose={() => setDocsOpen(false)}
@@ -82,7 +86,7 @@ export function InfiniteTalkScreen() {
         <LipsyncDocs />
       </Modal>
 
-      <header className="flex items-start justify-between gap-6">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-50">
             Cryptik - Lipsync Tool
@@ -217,12 +221,13 @@ export function InfiniteTalkScreen() {
                 <div
                   className={`sticky top-0 grid ${EXECUTION_GRID} bg-slate-900/95 px-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-slate-600`}
                 >
-                  <span>ID</span>
-                  <span>Nombre</span>
+                  <span className="sm:hidden">Nombre</span>
+                  <span className={SECONDARY_COLUMN}>ID</span>
+                  <span className="hidden sm:block">Nombre</span>
                   <span>Estado</span>
-                  <span>Pedido</span>
-                  <span>Espera</span>
-                  <span>Ejec.</span>
+                  <span className={SECONDARY_COLUMN}>Pedido</span>
+                  <span className={SECONDARY_COLUMN}>Espera</span>
+                  <span className={SECONDARY_COLUMN}>Ejec.</span>
                 </div>
 
                 {executions.map((execution) => (

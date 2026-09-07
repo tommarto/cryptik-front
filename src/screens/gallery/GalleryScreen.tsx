@@ -94,7 +94,7 @@ export function GalleryScreen() {
 
   return (
     <div className="py-8">
-      <header className="mb-6 flex items-end justify-between gap-6 px-8">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4 px-4 sm:px-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-50">Galería</h1>
           <p className="mt-1 text-sm text-slate-400">
@@ -102,7 +102,7 @@ export function GalleryScreen() {
           </p>
         </div>
 
-        <div className="flex shrink-0 gap-2">
+        <div className="flex flex-wrap gap-2">
           <CheckboxSelect
             label="Tipo"
             options={TYPE_OPTIONS}
@@ -138,10 +138,10 @@ export function GalleryScreen() {
         <>
           {/* El negro se ve por el spacing: es lo que dibuja las líneas finas
               entre celdas sin pintar bordes en cada una. */}
-          {/* Cuatro por fila, celdas iguales. El negro se ve por el gap: es
-              lo que dibuja las líneas finas entre celdas sin pintar bordes en
-              cada una, que se duplicarían entre vecinas. */}
-          <div className="grid grid-cols-2 gap-[3px] bg-black sm:grid-cols-4">
+          {/* Cuatro por fila, celdas iguales. Sin fondo propio: por el gap se
+              ve el degradado de la página, que es lo que separa las celdas sin
+              pintar bordes en cada una. */}
+          <div className="grid grid-cols-2 gap-[3px] sm:grid-cols-4">
             {photos.map(({ src, execution }) => {
               const Fallback = FALLBACK_ICON[execution.resultMediaType];
               const playable = execution.status === ExecutionStatus.Completed;
