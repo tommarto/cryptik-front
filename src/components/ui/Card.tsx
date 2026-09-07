@@ -7,9 +7,20 @@ type CardProps = {
   action?: ReactNode
   children: ReactNode
   className?: string
+  /**
+   * Reemplaza el padding del cuerpo. Se pasa entero y no se concatena porque
+   * dos clases de padding de Tailwind compiten sin un ganador previsible.
+   */
+  bodyClassName?: string
 }
 
-export function Card({ title, action, children, className = '' }: CardProps) {
+export function Card({
+  title,
+  action,
+  children,
+  className = '',
+  bodyClassName = 'p-5',
+}: CardProps) {
   return (
     <section
       className={`flex flex-col rounded-xl border border-slate-800 bg-slate-900/60 ${className}`}
@@ -22,7 +33,7 @@ export function Card({ title, action, children, className = '' }: CardProps) {
       )}
       {/* `min-h-0` deja que el cuerpo se achique por debajo de su contenido
           cuando la card tiene alto fijo, para que adentro se pueda scrollear. */}
-      <div className="min-h-0 flex-1 p-5">{children}</div>
+      <div className={`min-h-0 flex-1 ${bodyClassName}`}>{children}</div>
     </section>
   )
 }

@@ -77,7 +77,7 @@ export function InfiniteTalkScreen() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
+    <div className="mx-auto flex max-w-6xl flex-col px-4 py-6 sm:px-8 sm:py-8 lg:h-dvh lg:overflow-hidden">
       <Modal
         open={docsOpen}
         onClose={() => setDocsOpen(false)}
@@ -86,7 +86,7 @@ export function InfiniteTalkScreen() {
         <LipsyncDocs />
       </Modal>
 
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="flex shrink-0 flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-50">
             Cryptik - Lipsync Tool
@@ -106,8 +106,8 @@ export function InfiniteTalkScreen() {
         </Button>
       </header>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div className="flex flex-col gap-6">
+      <div className="mt-8 grid gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-2">
+        <div className="flex flex-col gap-6 lg:min-h-0">
           {error && (
             <Alert
               variant={AlertVariant.Error}
@@ -119,7 +119,7 @@ export function InfiniteTalkScreen() {
           )}
 
           <Card title="Parámetros de Entrada" className="flex-1">
-            <div className="flex h-full flex-col gap-5">
+            <div className="flex h-full flex-col gap-5 lg:overflow-y-auto">
               <Input
                 label="Nombre"
                 value={taskName}
@@ -191,7 +191,7 @@ export function InfiniteTalkScreen() {
           </Card>
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 lg:min-h-0">
           <Card
             className="lg:h-56"
             title="Cola de Trabajos"
@@ -242,7 +242,7 @@ export function InfiniteTalkScreen() {
             )}
           </Card>
 
-          {selected && <ExecutionPreview execution={selected} className="flex-1 lg:min-h-[36rem]" />}
+          {selected && <ExecutionPreview execution={selected} className="flex-1 lg:min-h-0" />}
         </div>
       </div>
     </div>
@@ -264,8 +264,18 @@ function ExecutionPreview({
   )
 
   return (
-    <Card title={`#${execution.id.slice(0, 8)} · Vista Previa`} className={className}>
-      <div className="flex h-full flex-col items-center justify-center rounded-lg border border-slate-800 bg-slate-950/40 px-6 py-10 text-center">
+    <Card
+      title={`#${execution.id.slice(0, 8)} · Vista Previa`}
+      className={className}
+      // Sin padding: el video ocupa la card entera. Los otros estados ponen el
+      // suyo, que son texto y necesitan aire.
+      bodyClassName="p-0"
+    >
+      <div
+        className={`flex h-full flex-col items-center justify-center bg-slate-950/40 text-center ${
+          isDone && videoUrl ? '' : 'px-6 py-10'
+        }`}
+      >
         {execution.status === ExecutionStatus.Error ? (
           <>
             <p className="text-sm font-medium text-red-300">La generación falló</p>
@@ -280,7 +290,7 @@ function ExecutionPreview({
             <video
               src={videoUrl}
               controls
-              className="max-h-full max-w-full rounded-lg"
+              className="max-h-full max-w-full rounded-lg object-contain"
             />
           ) : (
             <p className="text-xs text-slate-500">No se pudo cargar el video.</p>
