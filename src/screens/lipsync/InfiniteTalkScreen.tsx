@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Sparkles } from 'lucide-react'
+import { Download, Loader2, RefreshCw, Sparkles, TriangleAlert } from 'lucide-react'
 import { Alert } from '../../components/ui/Alert'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -17,6 +17,7 @@ import {
 import { useCreateLipsync, useExecutions } from '../../hooks/useExecutions'
 import { useElapsed } from '../../hooks/useElapsed'
 import { useVideoUrl } from '../../hooks/useVideoUrl'
+import { DownloadState, useVideoDownload } from '../../hooks/useVideoDownload'
 import { MAX_AUDIO_BYTES, MAX_IMAGE_BYTES } from '../../services/workflowService'
 import { ExecutionStatus, type WorkflowExecution } from '../../types/workflow'
 import { describeRejection, formatBytes } from '../../utils/file'
@@ -266,6 +267,8 @@ function ExecutionPreview({
   return (
     <Card
       title={`#${execution.id.slice(0, 8)} · Vista Previa`}
+      // Solo cuando hay video: antes de eso no hay nada que bajar.
+      action={isDone && videoUrl ? <DownloadAction executionId={execution.id} /> : undefined}
       className={className}
       // Sin padding: el video ocupa la card entera. Los otros estados ponen el
       // suyo, que son texto y necesitan aire.
@@ -316,5 +319,38 @@ function ExecutionPreview({
         )}
       </div>
     </Card>
+  )
+}
+
+/** Botón de descarga del header de la vista previa. Mismo hook que la galería. */
+function DownloadAction({ executionId }: { executionId: string }) {
+  const { download, state } = useVideoDownload(executionId)
+
+  const Icon =
+    state === DownloadState.Loading
+      ? Loader2
+      : state === DownloadState.Error
+        ? TriangleAlert
+        : Download
+
+  return (
+    <Button
+      variant={ButtonVariant.Ghost}
+      size={ButtonSize.Icon}
+      aria-label="Descargar video"
+      title={
+        state === DownloadState.Error
+          ? 'No se pudo descargar. Reintentar.'
+          : 'Descargar'
+      }
+      onClick={() => void download()}
+      icon={
+        <Icon
+          className={`size-4 ${state === DownloadState.Loading ? 'animate-spin' : ''} ${
+            state === DownloadState.Error ? 'text-red-300' : ''
+          }`}
+        />
+      }
+    />
   )
 }

@@ -1,6 +1,8 @@
-import { Play } from 'lucide-react'
+import type { MouseEvent } from 'react'
+import { Download, Loader2, Play, TriangleAlert } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge'
 import { BadgeTone } from '../../constants/ui'
+import { DownloadState, useVideoDownload } from '../../hooks/useVideoDownload'
 import type { GalleryUser } from '../../services/galleryService'
 import { ExecutionStatus, type WorkflowExecution } from '../../types/workflow'
 
@@ -55,9 +57,51 @@ export function GalleryOverlay({
         </span>
       )}
 
-      <span className="absolute bottom-1.5 right-1.5">
+      <span className="absolute bottom-1.5 right-1.5 flex items-center gap-1.5">
+        {playable && <DownloadButton executionId={execution.id} />}
         <Badge tone={status.tone}>{status.label}</Badge>
       </span>
     </div>
+  )
+}
+
+/** Píldora sobre la miniatura. La lógica de la descarga vive en el hook. */
+function DownloadButton({ executionId }: { executionId: string }) {
+  const { download, state } = useVideoDownload(executionId)
+
+  function handleClick(event: MouseEvent) {
+    // La celda entera abre el reproductor: sin esto, bajar el video también
+    // abriría el modal.
+    event.stopPropagation()
+    void download()
+  }
+
+  const Icon =
+    state === DownloadState.Loading
+      ? Loader2
+      : state === DownloadState.Error
+        ? TriangleAlert
+        : Download
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      aria-label="Descargar video"
+      title={
+        state === DownloadState.Error
+          ? 'No se pudo descargar. Reintentar.'
+          : 'Descargar'
+      }
+      className={`pointer-events-auto rounded-md p-1 ring-1 ring-inset transition-colors ${
+        state === DownloadState.Error
+          ? 'bg-red-500/10 text-red-300 ring-red-500/30'
+          : 'bg-slate-900/80 text-slate-300 ring-slate-700 hover:bg-slate-800 hover:text-slate-100'
+      }`}
+    >
+      <Icon
+        className={`size-3.5 ${state === DownloadState.Loading ? 'animate-spin' : ''}`}
+      />
+    </button>
   )
 }

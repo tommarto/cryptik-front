@@ -165,13 +165,25 @@ export function GalleryScreen() {
               const playable = execution.status === ExecutionStatus.Completed;
 
               return (
-                <button
+                // Un `div` y no un `button`: adentro va el botón de descarga,
+                // y el parser de HTML cierra un `button` al encontrar otro.
+                <div
                   key={execution.id}
-                  type="button"
+                  role="button"
+                  tabIndex={playable ? 0 : -1}
+                  aria-disabled={!playable}
                   onClick={() => playable && setOpened(execution)}
-                  disabled={!playable}
+                  onKeyDown={(event) => {
+                    if (!playable) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setOpened(execution);
+                    }
+                  }}
                   title={execution.context.name ?? undefined}
-                  className="group relative aspect-[3/4] overflow-hidden bg-slate-900 disabled:cursor-default"
+                  className={`group relative aspect-[3/4] overflow-hidden bg-slate-900 ${
+                    playable ? "cursor-pointer" : "cursor-default"
+                  }`}
                 >
                   {src ? (
                     <img
@@ -192,7 +204,7 @@ export function GalleryScreen() {
                       execution.userId ? usersById[execution.userId] : undefined
                     }
                   />
-                </button>
+                </div>
               );
             })}
           </div>

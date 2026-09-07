@@ -89,10 +89,15 @@ export const workflowService = {
     return toExecution(data.execution as ExecutionRow)
   },
 
-  /** URL firmada del video. La base guarda el path, nunca la URL. */
-  getVideoUrl: async (executionId: string): Promise<string> => {
+  /**
+   * URL firmada del video. La base guarda el path, nunca la URL.
+   *
+   * Con `download`, la URL viene firmada con `Content-Disposition: attachment`
+   * y vence en minutos: es un link de un solo uso, distinto del de reproducción.
+   */
+  getVideoUrl: async (executionId: string, download = false): Promise<string> => {
     const { data, error } = await supabase.functions.invoke('get-video-url', {
-      body: { executionId },
+      body: { executionId, download },
     })
 
     if (error) throw new Error(await readFunctionError(error))
