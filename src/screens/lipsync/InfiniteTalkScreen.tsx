@@ -107,7 +107,12 @@ export function InfiniteTalkScreen() {
         </Button>
       </header>
 
-      <div className="mt-8 grid gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-2">
+      {/* `grid-rows-[minmax(0,1fr)]` y no solo `min-h-0` en el contenedor: la
+          fila implícita de un grid es `auto`, o sea que se dimensiona por su
+          contenido y desborda al padre aunque el padre esté acotado. Con la
+          fila fijada a 1fr y mínimo 0, las columnas quedan del alto disponible
+          y recién ahí el `overflow-y-auto` de adentro tiene contra qué apretar. */}
+      <div className="mt-8 grid gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-2 lg:grid-rows-[minmax(0,1fr)]">
         <div className="flex flex-col gap-6 lg:min-h-0">
           {error && (
             <Alert
@@ -119,7 +124,11 @@ export function InfiniteTalkScreen() {
             </Alert>
           )}
 
-          <Card title="Parámetros de Entrada" className="flex-1">
+          {/* `lg:min-h-0` además de `flex-1`: sin eso el `min-height: auto` de un
+              ítem flex es el alto de su contenido, así que la card se niega a
+              encogerse y desborda la columna en pantallas bajas. Es el mismo
+              par que ya tiene la vista previa en la columna derecha. */}
+          <Card title="Parámetros de Entrada" className="flex-1 lg:min-h-0">
             <div className="flex h-full min-h-0 flex-1 flex-col gap-5 lg:overflow-y-auto">
               <Input
                 label="Nombre"
