@@ -129,7 +129,7 @@ export function InfiniteTalkScreen() {
               encogerse y desborda la columna en pantallas bajas. Es el mismo
               par que ya tiene la vista previa en la columna derecha. */}
           <Card title="Parámetros de Entrada" className="flex-1 lg:min-h-0">
-            <div className="flex h-full min-h-0 flex-1 flex-col gap-5 lg:overflow-y-auto">
+            <div className="flex h-full min-h-0 flex-1 flex-col gap-4 lg:overflow-y-auto">
               <Input
                 label="Nombre"
                 value={taskName}
@@ -176,12 +176,13 @@ export function InfiniteTalkScreen() {
 
               <Textarea
                 label="Prompt de Imagen"
-                rows={7}
-                // `resize-none` contra el `resize: vertical` que trae el
-                // preflight de Tailwind. Con la página fijada al viewport,
-                // agrandar el campo a mano empujaba el botón de generar fuera
-                // de pantalla y no había cómo scrollear hasta él. El texto
-                // largo scrollea adentro del campo, que es lo que se quiere.
+                // Cuatro filas y no siete: en un MacBook 13" el viewport ronda
+                // los 700px y con siete el botón de generar no entraba. El
+                // prompt largo scrollea adentro del campo.
+                rows={4}
+                // Contra el `resize: vertical` del preflight de Tailwind: con la
+                // página fijada al viewport, agrandar el campo a mano empujaba el
+                // botón fuera de pantalla.
                 className="resize-none"
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}

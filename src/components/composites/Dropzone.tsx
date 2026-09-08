@@ -88,7 +88,7 @@ export function Dropzone({
         {...getRootProps()}
         className={`cursor-pointer rounded-lg border transition-colors ${
           variant === DropzoneVariant.Area
-            ? 'flex flex-col items-center justify-center border-dashed px-6 py-8 text-center'
+            ? 'flex flex-col items-center justify-center border-dashed px-6 py-4 text-center'
             : 'flex items-center gap-3 px-3 py-3'
         } ${border}`}
       >
@@ -100,7 +100,7 @@ export function Dropzone({
               <img
                 src={previewUrl}
                 alt={file?.name ?? ''}
-                className="mb-3 max-h-40 rounded-md object-contain"
+                className="mb-3 max-h-24 rounded-md object-contain"
               />
             ) : (
               <ImageIcon className="mb-3 size-6 text-slate-600" />
