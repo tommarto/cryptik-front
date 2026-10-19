@@ -11,24 +11,21 @@ import { RequireAuth } from './components/layout/RequireAuth'
 import { GalleryScreen } from './screens/gallery/GalleryScreen'
 import { InfiniteTalkScreen } from './screens/lipsync/InfiniteTalkScreen'
 import { LoginScreen } from './screens/auth/LoginScreen'
+import { SeedanceScreen } from './screens/seedance/SeedanceScreen'
 import { NotFoundScreen } from './screens/NotFoundScreen'
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
-      {/* Sin sesión: fondo con degradado, sin navegación. */}
       <Route element={<AuthLayout />}>
         <Route path={AppRoutes.Login} element={<LoginScreen />} />
       </Route>
 
-      {/* Con sesión. */}
       <Route element={<RequireAuth />}>
         <Route path={AppRoutes.Home} element={<AppLayout />}>
-          <Route
-            index
-            element={<Navigate to={AppRoutes.InfiniteTalk} replace />}
-          />
+          <Route index element={<Navigate to={AppRoutes.Gallery} replace />} />
           <Route path="lipsync/infinitetalk" element={<InfiniteTalkScreen />} />
+          <Route path="video/seedance" element={<SeedanceScreen />} />
           <Route path="gallery" element={<GalleryScreen />} />
           <Route path="*" element={<NotFoundScreen />} />
         </Route>
