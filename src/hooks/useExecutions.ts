@@ -1,24 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { workflowService, type CreatePhase } from '../services/workflowService'
-import type { CreateLipsyncPayload } from '../types/workflow'
+import type {
+  CreateLipsyncPayload,
+  CreateSeedancePayload,
+} from '../types/workflow'
 
 export const executionKeys = {
   all: ['workflow_execution'] as const,
+  byType: (workflowTypeCode?: string) =>
+    ['workflow_execution', workflowTypeCode ?? 'all'] as const,
 }
 
-export function useExecutions() {
+export function useExecutions(workflowTypeCode?: string) {
   const queryClient = useQueryClient()
 
   const query = useQuery({
-    queryKey: executionKeys.all,
-    // Envuelto: pasarlo directo le entregaría el contexto de TanStack como
-    // opciones de listado.
-    queryFn: () => workflowService.list(),
+    queryKey: executionKeys.byType(workflowTypeCode),
+    queryFn: () => workflowService.list(workflowTypeCode),
   })
 
-  // El webhook actualiza la fila del lado del servidor; Realtime nos avisa y
-  // recién ahí refrescamos. Sin esto habría que pollear.
   useEffect(() => {
     return workflowService.onExecutionChange(() => {
       void queryClient.invalidateQueries({ queryKey: executionKeys.all })
@@ -30,8 +31,6 @@ export function useExecutions() {
 
 export function useCreateLipsync() {
   const queryClient = useQueryClient()
-  // Subir los archivos puede tardar, así que la pantalla necesita saber en qué
-  // paso está y no solo que "está cargando".
   const [phase, setPhase] = useState<CreatePhase | null>(null)
 
   const mutation = useMutation({
@@ -44,4 +43,16 @@ export function useCreateLipsync() {
   })
 
   return { ...mutation, phase }
+}
+
+export function useCreateSeedance() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: CreateSeedancePayload) =>
+      workflowService.createSeedance(payload),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: executionKeys.all })
+    },
+  })
 }

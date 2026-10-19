@@ -1,18 +1,20 @@
 import { supabase } from '../clients/supabaseClient'
 import { mediaService } from './mediaService'
-import { ExecutionStatus, MediaType, type WorkflowExecution } from '../types/workflow'
-import type { CreateLipsyncPayload } from '../types/workflow'
+import {
+  ExecutionStatus,
+  MediaType,
+  WorkflowTypeCode,
+  type WorkflowExecution,
+} from '../types/workflow'
+import type {
+  CreateLipsyncPayload,
+  CreateSeedancePayload,
+} from '../types/workflow'
 import { readFunctionError } from '../utils/functionError'
 
-/**
- * Ya no hay techo de 10 MB: los archivos van del browser a S3 y RunPod los baja
- * de ahí, así que no viajan en el payload ni pasan por base64. Estos límites son
- * de sensatez, no una restricción del proveedor.
- */
 export const MAX_IMAGE_BYTES = 100 * 1024 * 1024
 export const MAX_AUDIO_BYTES = 100 * 1024 * 1024
 
-/** Fases del alta, para que la pantalla pueda decir en cuál está. */
 export type CreatePhase = 'uploading' | 'starting'
 
 type ExecutionRow = {
@@ -23,12 +25,14 @@ type ExecutionRow = {
   requested_at: string
   started_at: string | null
   finished_at: string | null
-  workflow?: { workflow_type?: { result_media_type?: MediaType } | null } | null
+  workflow?: {
+    workflow_type?: { code?: string; result_media_type?: MediaType } | null
+  } | null
 }
 
 const EXECUTION_COLUMNS =
   'id, status, context, error_message, requested_at, started_at, finished_at, ' +
-  'workflow(workflow_type(result_media_type))'
+  'workflow!inner(workflow_type!inner(code, result_media_type))'
 
 function toExecution(row: ExecutionRow): WorkflowExecution {
   return {
@@ -36,6 +40,7 @@ function toExecution(row: ExecutionRow): WorkflowExecution {
     status: row.status,
     resultMediaType:
       row.workflow?.workflow_type?.result_media_type ?? MediaType.Video,
+    workflowTypeCode: row.workflow?.workflow_type?.code,
     context: (row.context ?? {}) as WorkflowExecution['context'],
     errorMessage: row.error_message,
     requestedAt: row.requested_at,
@@ -45,32 +50,31 @@ function toExecution(row: ExecutionRow): WorkflowExecution {
 }
 
 export const workflowService = {
-  /** La RLS acota el resultado a las ejecuciones del usuario logueado. */
-  list: async (): Promise<WorkflowExecution[]> => {
-    const { data, error } = await supabase
+  list: async (workflowTypeCode?: string): Promise<WorkflowExecution[]> => {
+    let query = supabase
       .from('workflow_execution')
       .select(EXECUTION_COLUMNS)
       .order('requested_at', { ascending: false })
       .limit(50)
 
+    if (workflowTypeCode) {
+      query = query.eq('workflow.workflow_type.code', workflowTypeCode)
+    }
+
+    const { data, error } = await query
+
     if (error) throw new Error(error.message)
-    // El cliente no puede inferir la forma de las relaciones embebidas sin los
-    // tipos generados del esquema.
     return (data as unknown as ExecutionRow[]).map(toExecution)
   },
 
-  /**
-   * Primero los archivos, después la ejecución: el worker los baja de S3 apenas
-   * arranca, así que no puede dispararse antes de que estén verificados.
-   */
   createLipsync: async (
     { image, audio, prompt, taskName }: CreateLipsyncPayload,
     onPhase?: (phase: CreatePhase) => void,
   ): Promise<WorkflowExecution> => {
     onPhase?.('uploading')
     const [imageMedia, audioMedia] = await Promise.all([
-      mediaService.upload(image),
-      mediaService.upload(audio),
+      mediaService.upload(image, WorkflowTypeCode.Lipsync),
+      mediaService.upload(audio, WorkflowTypeCode.Lipsync),
     ])
 
     onPhase?.('starting')
@@ -79,8 +83,6 @@ export const workflowService = {
         imageMediaId: imageMedia.id,
         audioMediaId: audioMedia.id,
         prompt: prompt.trim() || undefined,
-        // El nombre del audio como default: es lo que el usuario reconoce si no
-        // se molestó en ponerle un nombre a la corrida.
         name: taskName.trim() || audio.name,
       },
     })
@@ -89,12 +91,27 @@ export const workflowService = {
     return toExecution(data.execution as ExecutionRow)
   },
 
-  /**
-   * URL firmada del video. La base guarda el path, nunca la URL.
-   *
-   * Con `download`, la URL viene firmada con `Content-Disposition: attachment`
-   * y vence en minutos: es un link de un solo uso, distinto del de reproducción.
-   */
+  createSeedance: async (
+    payload: CreateSeedancePayload,
+  ): Promise<{ id: string }> => {
+    const { data, error } = await supabase.functions.invoke(
+      'create-seedance-execution',
+      {
+        body: {
+          prompt: payload.prompt.trim(),
+          name: payload.taskName.trim() || undefined,
+          assetMediaIds: payload.assetMediaIds,
+          duration: payload.duration,
+          aspectRatio: payload.aspectRatio,
+          resolution: payload.resolution,
+        },
+      },
+    )
+
+    if (error) throw new Error(await readFunctionError(error))
+    return data.execution as { id: string }
+  },
+
   getVideoUrl: async (executionId: string, download = false): Promise<string> => {
     const { data, error } = await supabase.functions.invoke('get-video-url', {
       body: { executionId, download },
@@ -104,7 +121,6 @@ export const workflowService = {
     return data.url as string
   },
 
-  /** Empuja los cambios por websocket en vez de que el front pollee. */
   onExecutionChange: (listener: () => void) => {
     const channel = supabase
       .channel('workflow_execution_changes')

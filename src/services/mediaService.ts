@@ -1,6 +1,8 @@
 import { supabase } from '../clients/supabaseClient'
 import { readFunctionError } from '../utils/functionError'
 import { makeThumbnail } from '../utils/image'
+import { makeVideoThumbnail } from '../utils/video'
+import type { LibraryAsset } from '../types/media'
 
 export enum MediaStatus {
   Pending = 'pending',
@@ -13,10 +15,6 @@ export type Media = {
   status: MediaStatus
 }
 
-/**
- * Los browsers reportan variantes para el mismo formato. El worker solo conoce
- * las formas canónicas, así que hay que normalizar antes de mandar.
- */
 const CONTENT_TYPE_ALIASES: Record<string, string> = {
   'audio/x-m4a': 'audio/mp4',
   'audio/m4a': 'audio/mp4',
@@ -42,28 +40,88 @@ async function put(url: string, body: Blob, contentType: string, label: string) 
   }
 }
 
+type LibraryRow = {
+  id: string
+  media_type: LibraryAsset['mediaType']
+  file_name: string | null
+  display_name: string | null
+  thumbnail_url: string | null
+  created_at: string
+}
+
 export const mediaService = {
-  /**
-   * Sube un archivo en tres pasos: pedir la firma, subir a S3, y confirmar.
-   * El `verify` no es una formalidad — es el servidor mirando el objeto real,
-   * porque una subida cortada a la mitad deja un archivo que existe pero no
-   * sirve, y sin esa comprobación el worker fallaría recién quince minutos
-   * después.
-   */
-  upload: async (file: File): Promise<Media> => {
+  listLibrary: async (
+    workflowTypeCode: string,
+    mediaTypes?: string[],
+  ): Promise<LibraryAsset[]> => {
+    const { data, error } = await supabase.functions.invoke('get-media-library', {
+      body: {
+        workflowTypeCode,
+        mediaTypes: mediaTypes?.length ? mediaTypes : undefined,
+      },
+    })
+
+    if (error) throw new Error(await readFunctionError(error))
+
+    return (data.assets as LibraryRow[]).map((row) => ({
+      id: row.id,
+      mediaType: row.media_type,
+      fileName: row.file_name,
+      displayName: row.display_name,
+      thumbnailUrl: row.thumbnail_url,
+      createdAt: row.created_at,
+    }))
+  },
+
+  byIds: async (ids: string[]): Promise<LibraryAsset[]> => {
+    if (ids.length === 0) return []
+
+    const { data, error } = await supabase.functions.invoke('get-media-library', {
+      body: { ids },
+    })
+    if (error) throw new Error(await readFunctionError(error))
+
+    const porId = new Map(
+      (data.assets as LibraryRow[]).map((row) => [row.id, row]),
+    )
+
+    return ids
+      .map((id) => porId.get(id))
+      .filter((row): row is LibraryRow => Boolean(row))
+      .map((row) => ({
+        id: row.id,
+        mediaType: row.media_type,
+        fileName: row.file_name,
+        displayName: row.display_name,
+        thumbnailUrl: row.thumbnail_url,
+        createdAt: row.created_at,
+      }))
+  },
+
+  setName: async (mediaId: string, displayName: string): Promise<void> => {
+    const { error } = await supabase.functions.invoke('set-media-name', {
+      body: { mediaId, displayName },
+    })
+
+    if (error) throw new Error(await readFunctionError(error))
+  },
+
+  upload: async (file: File, workflowTypeCode: string): Promise<Media> => {
     const contentType = normalizeContentType(file.type)
 
-    // La miniatura se genera antes de pedir la firma: de ahí salen las
-    // dimensiones, que la galería necesita para armar las filas justificadas.
     const thumbnail = contentType.startsWith('image/')
       ? await makeThumbnail(file)
-      : null
+      : contentType.startsWith('video/')
+        ? await makeVideoThumbnail(file)
+        : null
 
     const { data: created, error: createError } = await supabase.functions.invoke(
       'create-media-upload',
       {
         body: {
           contentType,
+          workflowTypeCode,
+          fileName: file.name,
           width: thumbnail?.width,
           height: thumbnail?.height,
         },

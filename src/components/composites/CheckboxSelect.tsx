@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import { useDismiss } from '../../hooks/useDismiss'
 import { Check, ChevronDown } from 'lucide-react'
 
 export type CheckboxOption<T extends string> = {
@@ -13,11 +14,6 @@ type CheckboxSelectProps<T extends string> = {
   onChange: (selected: T[]) => void
 }
 
-/**
- * Desplegable con selección múltiple. Se cierra con Escape o al hacer click
- * afuera — sin eso queda abierto para siempre en cuanto el usuario mira otra
- * parte de la pantalla.
- */
 export function CheckboxSelect<T extends string>({
   label,
   options,
@@ -27,23 +23,7 @@ export function CheckboxSelect<T extends string>({
   const [open, setOpen] = useState(false)
   const container = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!open) return
-
-    function onPointerDown(event: MouseEvent) {
-      if (!container.current?.contains(event.target as Node)) setOpen(false)
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false)
-    }
-
-    document.addEventListener('mousedown', onPointerDown)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [open])
+  useDismiss(open, container, useCallback(() => setOpen(false), []))
 
   function toggle(value: T) {
     onChange(

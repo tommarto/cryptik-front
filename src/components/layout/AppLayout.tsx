@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import { LayoutGrid, Menu, Sparkles } from 'lucide-react'
+import { Clapperboard, LayoutGrid, Menu, Sparkles } from 'lucide-react'
 import brandLogo from '../../assets/brand-logo.jpg'
 import { Brand } from '../composites/Brand'
 import { AppRoutes } from '../../config/routes'
@@ -13,12 +13,12 @@ import { UserMenu } from './UserMenu'
 const STORAGE_KEY = 'sidebar:collapsed'
 
 const ITEMS: SidebarItem[] = [
-  { label: 'Lipsync', to: AppRoutes.InfiniteTalk, icon: Sparkles },
   { label: 'Galería', to: AppRoutes.Gallery, icon: LayoutGrid },
+  { label: 'Lipsync', to: AppRoutes.InfiniteTalk, icon: Sparkles },
+  { label: 'Seedance', to: AppRoutes.Seedance, icon: Clapperboard },
 ]
 
 export function AppLayout() {
-  // Se recuerda entre recargas: es una preferencia, no estado de la sesión.
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) === 'true'
@@ -27,8 +27,6 @@ export function AppLayout() {
     }
   })
 
-  // En mobile la barra es un cajón encima del contenido: con 240px fijos no
-  // queda pantalla para nada más.
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   function toggle() {
@@ -37,13 +35,12 @@ export function AppLayout() {
       try {
         localStorage.setItem(STORAGE_KEY, String(next))
       } catch {
-        // modo privado o storage bloqueado: la preferencia no se recuerda
+        /* empty */
       }
       return next
     })
   }
 
-  /** Solo escritorio: en mobile el menú es `MobileMenu`, con otro diseño. */
   function renderSidebar() {
     return (
       <Sidebar
@@ -74,7 +71,6 @@ export function AppLayout() {
     <div className="relative min-h-screen bg-slate-950 text-slate-200">
       <GradientBackdrop />
 
-      {/* Mobile: barra superior con el botón del menú. */}
       <div className="relative z-10 flex items-center gap-3 border-b border-slate-800 px-4 py-3 md:hidden">
         <button
           type="button"
@@ -93,7 +89,6 @@ export function AppLayout() {
       </div>
 
       <div className="relative z-10 flex">
-        {/* Desktop: la barra ocupa lugar en el flujo. */}
         <div className="hidden md:block">{renderSidebar()}</div>
 
         <main className="min-w-0 flex-1">
