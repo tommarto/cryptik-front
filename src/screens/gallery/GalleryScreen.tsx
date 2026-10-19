@@ -103,8 +103,7 @@ export function GalleryScreen() {
   const photos = useMemo(
     () =>
       executions.map((execution) => {
-        const thumbnail =
-          thumbnails[execution.context.image_media_id as string];
+        const thumbnail = thumbnails[execution.id];
 
         return {
           src: thumbnail?.url ?? "",
