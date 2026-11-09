@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Clock, Frame, Gem } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -15,6 +16,7 @@ import { ButtonVariant } from '../../constants/ui'
 import { useCreateSeedance } from '../../hooks/useExecutions'
 import {
   WorkflowTypeCode,
+  type ReuseExecutionState,
   type SeedanceContext,
   type WorkflowExecution,
 } from '../../types/workflow'
@@ -45,6 +47,7 @@ export function SeedanceScreen() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [sourceExecutionId, setSourceExecutionId] = useState<string>()
 
   const createSeedance = useCreateSeedance()
   const counts = countByType(assets)
@@ -64,6 +67,7 @@ export function SeedanceScreen() {
           settings.duration === DurationMode.Auto ? -1 : settings.duration,
         aspectRatio: settings.aspectRatio,
         resolution: settings.resolution,
+        sourceExecutionId,
       })
       setSelectedId(execution.id)
     } catch (cause) {
@@ -101,8 +105,19 @@ export function SeedanceScreen() {
       resolution: (context.resolution as Resolution) ?? DEFAULT_SETTINGS.resolution,
     })
 
+    setSourceExecutionId(execution.id)
+    const expected = context.asset_media_ids?.length ?? 0
     try {
-      setAssets(await mediaService.byIds(context.asset_media_ids ?? []))
+      const loaded = await mediaService.byExecution(execution.id)
+      setAssets(loaded)
+      const missing = expected - loaded.length
+      if (missing > 0) {
+        setError(
+          missing === 1
+            ? 'Una referencia ya no está disponible.'
+            : `${missing} referencias ya no están disponibles.`,
+        )
+      }
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : 'No se pudo cargar el contenido.',
@@ -110,10 +125,25 @@ export function SeedanceScreen() {
     }
   }
 
+  const location = useLocation()
+  const navigate = useNavigate()
+  const reused = useRef(false)
+
+  useEffect(() => {
+    const execution = (location.state as ReuseExecutionState | null)
+      ?.reuseExecution
+    if (!execution || reused.current) return
+
+    reused.current = true
+    void navigate(location.pathname, { replace: true, state: null })
+    void load(execution)
+  }, [location.state, location.pathname, navigate])
+
   function clear() {
     setTaskName('')
     setPrompt('')
     setAssets([])
+    setSourceExecutionId(undefined)
     setSettings(DEFAULT_SETTINGS)
     setError(null)
   }

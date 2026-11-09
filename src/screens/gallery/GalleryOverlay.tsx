@@ -1,10 +1,17 @@
 import type { MouseEvent } from 'react'
-import { Download, Loader2, Play, TriangleAlert } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Download, Loader2, Play, RotateCcw, TriangleAlert } from 'lucide-react'
+import { AppRoutes } from '../../config/routes'
 import { Badge } from '../../components/ui/Badge'
 import { BadgeTone } from '../../constants/ui'
 import { DownloadState, useVideoDownload } from '../../hooks/useVideoDownload'
 import type { GalleryUser } from '../../services/galleryService'
-import { ExecutionStatus, type WorkflowExecution } from '../../types/workflow'
+import {
+  ExecutionStatus,
+  WorkflowTypeCode,
+  type ReuseExecutionState,
+  type WorkflowExecution,
+} from '../../types/workflow'
 
 const STATUS = {
   [ExecutionStatus.Queued]: { label: 'En cola', tone: BadgeTone.Warning },
@@ -26,6 +33,7 @@ export function GalleryOverlay({
 }) {
   const status = STATUS[execution.status]
   const playable = execution.status === ExecutionStatus.Completed
+  const reusable = execution.workflowTypeCode === WorkflowTypeCode.Seedance
 
   return (
     <div className="pointer-events-none absolute inset-0">
@@ -58,6 +66,7 @@ export function GalleryOverlay({
       )}
 
       <span className="absolute bottom-1.5 right-1.5 flex items-center gap-1.5">
+        {reusable && <ReuseButton execution={execution} />}
         {playable && <DownloadButton executionId={execution.id} />}
         <Badge tone={status.tone}>{status.label}</Badge>
       </span>
@@ -102,6 +111,28 @@ function DownloadButton({ executionId }: { executionId: string }) {
       <Icon
         className={`size-3.5 ${state === DownloadState.Loading ? 'animate-spin' : ''}`}
       />
+    </button>
+  )
+}
+
+function ReuseButton({ execution }: { execution: WorkflowExecution }) {
+  const navigate = useNavigate()
+
+  function handleClick(event: MouseEvent) {
+    event.stopPropagation()
+    const state: ReuseExecutionState = { reuseExecution: execution }
+    void navigate(AppRoutes.Seedance, { state })
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      aria-label="Volver a generar con esta configuración"
+      title="Volver a generar con esta configuración"
+      className="pointer-events-auto rounded-md bg-slate-900/80 p-1 text-slate-300 ring-1 ring-inset ring-slate-700 transition-colors hover:bg-slate-800 hover:text-slate-100"
+    >
+      <RotateCcw className="size-3.5" />
     </button>
   )
 }

@@ -39,6 +39,8 @@ export type WorkflowExecution = {
   finishedAt: string | null
 }
 
+export type ReuseExecutionState = { reuseExecution: WorkflowExecution }
+
 export type CreateLipsyncPayload = {
   image: File
   audio: File
@@ -53,6 +55,7 @@ export type CreateSeedancePayload = {
   duration: number
   aspectRatio: string
   resolution: string
+  sourceExecutionId?: string
 }
 
 export type SeedanceContext = {

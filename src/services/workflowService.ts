@@ -104,6 +104,7 @@ export const workflowService = {
           duration: payload.duration,
           aspectRatio: payload.aspectRatio,
           resolution: payload.resolution,
+          sourceExecutionId: payload.sourceExecutionId,
         },
       },
     )

@@ -73,29 +73,20 @@ export const mediaService = {
     }))
   },
 
-  byIds: async (ids: string[]): Promise<LibraryAsset[]> => {
-    if (ids.length === 0) return []
-
+  byExecution: async (executionId: string): Promise<LibraryAsset[]> => {
     const { data, error } = await supabase.functions.invoke('get-media-library', {
-      body: { ids },
+      body: { executionId },
     })
     if (error) throw new Error(await readFunctionError(error))
 
-    const porId = new Map(
-      (data.assets as LibraryRow[]).map((row) => [row.id, row]),
-    )
-
-    return ids
-      .map((id) => porId.get(id))
-      .filter((row): row is LibraryRow => Boolean(row))
-      .map((row) => ({
-        id: row.id,
-        mediaType: row.media_type,
-        fileName: row.file_name,
-        displayName: row.display_name,
-        thumbnailUrl: row.thumbnail_url,
-        createdAt: row.created_at,
-      }))
+    return (data.assets as LibraryRow[]).map((row) => ({
+      id: row.id,
+      mediaType: row.media_type,
+      fileName: row.file_name,
+      displayName: row.display_name,
+      thumbnailUrl: row.thumbnail_url,
+      createdAt: row.created_at,
+    }))
   },
 
   setName: async (mediaId: string, displayName: string): Promise<void> => {
