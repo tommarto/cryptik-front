@@ -33,7 +33,7 @@ export function SettingPill({ icon, value, label, children }: SettingPillProps) 
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 z-20 mb-2 min-w-full rounded-lg border border-slate-700 bg-slate-900 p-1 shadow-xl">
+        <div className="absolute left-0 top-full z-20 mt-2 min-w-full rounded-lg border border-slate-700 bg-slate-900 p-1 shadow-xl">
           {children(() => setOpen(false))}
         </div>
       )}

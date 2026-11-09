@@ -209,14 +209,6 @@ export function SeedanceScreen() {
           }
         />
 
-        <PromptWithMentions
-          label="Prompt"
-          value={prompt}
-          onChange={setPrompt}
-          assets={labeled}
-          placeholder="Describí la escena: qué pasa, con qué encuadre, con qué luz y en qué estilo..."
-        />
-
         <div className="grid grid-cols-3 gap-2">
           <SettingPill
             icon={<Clock className="size-3.5" />}
@@ -313,6 +305,15 @@ export function SeedanceScreen() {
             )}
           </SettingPill>
         </div>
+
+        <PromptWithMentions
+          label="Prompt"
+          value={prompt}
+          onChange={setPrompt}
+          assets={labeled}
+          rows={12}
+          placeholder="Describí la escena: qué pasa, con qué encuadre, con qué luz y en qué estilo..."
+        />
       </GenerationLayout>
     </>
   )
