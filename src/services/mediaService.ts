@@ -2,7 +2,8 @@ import { supabase } from '../clients/supabaseClient'
 import { readFunctionError } from '../utils/functionError'
 import { makeThumbnail } from '../utils/image'
 import { makeVideoThumbnail } from '../utils/video'
-import type { LibraryAsset } from '../types/media'
+import { AssetKind, type LibraryAsset } from '../types/media'
+import type { FaceSyncStatus } from '../types/face'
 
 export enum MediaStatus {
   Pending = 'pending',
@@ -42,6 +43,8 @@ async function put(url: string, body: Blob, contentType: string, label: string) 
 
 type LibraryRow = {
   id: string
+  kind?: AssetKind
+  sync_status?: FaceSyncStatus
   media_type: LibraryAsset['mediaType']
   file_name: string | null
   display_name: string | null
@@ -81,6 +84,8 @@ export const mediaService = {
 
     return (data.assets as LibraryRow[]).map((row) => ({
       id: row.id,
+      kind: row.kind ?? AssetKind.Media,
+      syncStatus: row.sync_status,
       mediaType: row.media_type,
       fileName: row.file_name,
       displayName: row.display_name,
@@ -97,7 +102,7 @@ export const mediaService = {
     if (error) throw new Error(await readFunctionError(error))
   },
 
-  upload: async (file: File, workflowTypeCode: string): Promise<Media> => {
+  upload: async (file: File, workflowTypeCode?: string): Promise<Media> => {
     const contentType = normalizeContentType(file.type)
 
     const thumbnail = contentType.startsWith('image/')

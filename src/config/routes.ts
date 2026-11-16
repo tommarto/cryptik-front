@@ -4,4 +4,5 @@ export enum AppRoutes {
   InfiniteTalk = '/lipsync/infinitetalk',
   Seedance = '/video/seedance',
   Gallery = '/gallery',
+  Faces = '/faces',
 }

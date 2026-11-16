@@ -1,5 +1,9 @@
 import { useRef, useState } from 'react'
 import { Check, CloudUpload, Pencil } from 'lucide-react'
+import { FaceStatusDot } from './FaceStatusDot'
+import { faceKeys, useFaces } from '../../hooks/useFaces'
+import { faceNameFromFile, faceService } from '../../services/faceService'
+import { FaceSyncStatus } from '../../types/face'
 import { useQueryClient } from '@tanstack/react-query'
 import { Spinner } from '../ui/Spinner'
 import { Modal } from './Modal'
@@ -7,16 +11,25 @@ import { ASSET_ICON } from './assetIcons'
 import { mediaLibraryKeys, useMediaLibrary } from '../../hooks/useMediaLibrary'
 import { mediaService } from '../../services/mediaService'
 import { MediaType } from '../../types/workflow'
-import { assetCaption, type LibraryAsset } from '../../types/media'
+import {
+  AssetKind,
+  assetCaption,
+  faceAsset,
+  type LibraryAsset,
+} from '../../types/media'
 
+const FACES_FILTER = 'faces'
 
+type Filter = MediaType | typeof FACES_FILTER | null
 
-const FILTERS: { value: MediaType | null; label: string }[] = [
+const FILTERS: { value: Filter; label: string }[] = [
   { value: null, label: 'Todos' },
   { value: MediaType.Image, label: 'Imagen' },
   { value: MediaType.Video, label: 'Video' },
   { value: MediaType.Audio, label: 'Audio' },
 ]
+
+const FACES_OPTION: { value: Filter; label: string } = { value: FACES_FILTER, label: 'Caras' }
 
 export function AssetPickerModal({
   open,
@@ -27,6 +40,7 @@ export function AssetPickerModal({
   disabledReason,
   acceptedTypes,
   fileRejectionReason,
+  facesEnabled = false,
 }: {
   open: boolean
   onClose: () => void
@@ -36,8 +50,10 @@ export function AssetPickerModal({
   disabledReason?: (asset: LibraryAsset) => string | null
   acceptedTypes: string
   fileRejectionReason?: (file: File) => string | null
+  facesEnabled?: boolean
 }) {
-  const [filter, setFilter] = useState<MediaType | null>(null)
+  const [filter, setFilter] = useState<Filter>(null)
+  const showingFaces = filter === FACES_FILTER
   const [renaming, setRenaming] = useState<LibraryAsset | null>(null)
   const [draftName, setDraftName] = useState('')
   const [uploading, setUploading] = useState(false)
@@ -45,11 +61,18 @@ export function AssetPickerModal({
   const fileInput = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
 
-  const { data: assets = [], isPending } = useMediaLibrary(
+  const library = useMediaLibrary(
     workflowTypeCode,
-    filter ? [filter] : [],
-    open,
+    filter && filter !== FACES_FILTER ? [filter] : [],
+    open && !showingFaces,
   )
+  const faceLibrary = useFaces(open && showingFaces)
+
+  const assets: LibraryAsset[] = showingFaces
+    ? (faceLibrary.data?.faces ?? []).map(faceAsset)
+    : (library.data ?? [])
+  const isPending = showingFaces ? faceLibrary.isPending : library.isPending
+  const quota = faceLibrary.data?.quota
 
   async function upload(files: FileList | null) {
     if (!files?.length) return
@@ -57,12 +80,28 @@ export function AssetPickerModal({
     setError(null)
     setUploading(true)
     try {
-      const rejected = Array.from(files)
-        .map((file) => fileRejectionReason?.(file))
-        .filter((reason): reason is string => Boolean(reason))
+      const rejected = showingFaces
+        ? []
+        : Array.from(files)
+            .map((file) => fileRejectionReason?.(file))
+            .filter((reason): reason is string => Boolean(reason))
 
       if (rejected.length) {
         setError(rejected.join(' '))
+        return
+      }
+
+      if (showingFaces) {
+        for (const file of Array.from(files)) {
+          const created = await faceService.create({
+            file,
+            name: faceNameFromFile(file),
+            retentionDays: null,
+            sync: true,
+          })
+          if (created.warning) setError(created.warning)
+        }
+        await queryClient.invalidateQueries({ queryKey: faceKeys.all })
         return
       }
 
@@ -83,8 +122,13 @@ export function AssetPickerModal({
 
     setError(null)
     try {
-      await mediaService.setName(renaming.id, draftName)
-      await queryClient.invalidateQueries({ queryKey: mediaLibraryKeys.all })
+      if (renaming.kind === AssetKind.Face) {
+        await faceService.update(renaming.id, { name: draftName })
+        await queryClient.invalidateQueries({ queryKey: faceKeys.all })
+      } else {
+        await mediaService.setName(renaming.id, draftName)
+        await queryClient.invalidateQueries({ queryKey: mediaLibraryKeys.all })
+      }
       setRenaming(null)
     } catch (cause) {
       setError(
@@ -98,7 +142,7 @@ export function AssetPickerModal({
   return (
     <Modal open={open} onClose={onClose} title="Agregar contenido">
       <div className="mb-4 flex flex-wrap gap-2">
-        {FILTERS.map((option) => (
+        {(facesEnabled ? [...FILTERS, FACES_OPTION] : FILTERS).map((option) => (
           <button
             key={option.label}
             type="button"
@@ -113,6 +157,18 @@ export function AssetPickerModal({
           </button>
         ))}
       </div>
+
+      {showingFaces && (
+        <p className="mb-3 text-[11px] text-slate-500">
+          Las caras se suben a BytePlus de a 3 por minuto. Podés usar una que
+          todavía no esté disponible: la generación espera a que se habilite.
+          {quota && (
+            <span className="ml-1 font-mono text-slate-400">
+              {quota.used}/{quota.limit} en BytePlus
+            </span>
+          )}
+        </p>
+      )}
 
       {error && <p className="mb-3 text-xs text-red-400">{error}</p>}
 
@@ -160,7 +216,9 @@ export function AssetPickerModal({
           ) : (
             <>
               <CloudUpload className="size-6" />
-              <span className="text-xs font-medium">Subir archivo</span>
+              <span className="text-xs font-medium">
+                {showingFaces ? 'Subir cara' : 'Subir archivo'}
+              </span>
             </>
           )}
         </button>
@@ -169,7 +227,7 @@ export function AssetPickerModal({
           ref={fileInput}
           type="file"
           multiple
-          accept={acceptedTypes}
+          accept={showingFaces ? 'image/jpeg,image/png,image/webp' : acceptedTypes}
           className="hidden"
           onChange={(event) => void upload(event.target.files)}
         />
@@ -203,7 +261,9 @@ export function AssetPickerModal({
 
       {!isPending && assets.length === 0 && (
         <p className="py-6 text-center text-xs text-slate-500">
-          Todavía no subiste contenido de este tipo.
+          {showingFaces
+            ? 'Todavía no hay caras en la biblioteca.'
+            : 'Todavía no subiste contenido de este tipo.'}
         </p>
       )}
     </Modal>
@@ -249,6 +309,12 @@ function AssetOption({
           selected ? 'ring-indigo-500' : 'ring-transparent hover:ring-slate-700'
         }`}
       >
+        {asset.syncStatus && asset.syncStatus !== FaceSyncStatus.Synced && (
+          <span className="absolute bottom-6 right-1.5 z-10">
+            <FaceStatusDot status={asset.syncStatus} />
+          </span>
+        )}
+
         {asset.thumbnailUrl ? (
           <img
             src={asset.thumbnailUrl}

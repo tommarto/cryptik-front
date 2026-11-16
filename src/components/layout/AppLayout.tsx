@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import { Clapperboard, LayoutGrid, Menu, Sparkles } from 'lucide-react'
+import { Clapperboard, LayoutGrid, Menu, ScanFace, Sparkles } from 'lucide-react'
 import brandLogo from '../../assets/brand-logo.jpg'
 import { Brand } from '../composites/Brand'
 import { AppRoutes } from '../../config/routes'
@@ -16,6 +16,7 @@ const ITEMS: SidebarItem[] = [
   { label: 'Galería', to: AppRoutes.Gallery, icon: LayoutGrid },
   { label: 'Lipsync', to: AppRoutes.InfiniteTalk, icon: Sparkles },
   { label: 'Seedance', to: AppRoutes.Seedance, icon: Clapperboard },
+  { label: 'Caras', to: AppRoutes.Faces, icon: ScanFace },
 ]
 
 export function AppLayout() {

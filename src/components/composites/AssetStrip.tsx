@@ -1,6 +1,9 @@
 import { Plus, X } from 'lucide-react'
 import type { LabeledAsset } from '../../utils/assetLabels'
 import { ASSET_ICON } from './assetIcons'
+import { FaceStatusDot } from './FaceStatusDot'
+import { FaceSyncStatus } from '../../types/face'
+import { assetKey } from '../../types/media'
 
 export function AssetStrip({
   assets,
@@ -24,7 +27,7 @@ export function AssetStrip({
 
       <div className="flex flex-wrap gap-2 rounded-lg border border-slate-800 bg-slate-950/30 p-2">
         {assets.map((asset) => (
-          <AssetTile key={asset.id} asset={asset} onRemove={onRemove} />
+          <AssetTile key={assetKey(asset)} asset={asset} onRemove={onRemove} />
         ))}
 
         <button
@@ -73,6 +76,12 @@ function AssetTile({
       ) : (
         <span className="flex size-full items-center justify-center text-slate-600">
           <Fallback className="size-5" />
+        </span>
+      )}
+
+      {asset.syncStatus && asset.syncStatus !== FaceSyncStatus.Synced && (
+        <span className="absolute left-0.5 top-0.5">
+          <FaceStatusDot status={asset.syncStatus} />
         </span>
       )}
 

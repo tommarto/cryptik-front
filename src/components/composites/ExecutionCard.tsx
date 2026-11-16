@@ -4,6 +4,7 @@ import {
   Clock,
   FileInput,
   Loader,
+  ScanFace,
 } from 'lucide-react'
 import { Badge } from '../ui/Badge'
 import { BadgeTone } from '../../constants/ui'
@@ -57,7 +58,10 @@ export function ExecutionCard({
   showDelay = false,
   onLoad,
 }: ExecutionCardProps) {
-  const { label, tone, Icon } = statusConfig[execution.status]
+  const { label, tone, Icon } =
+    execution.status === ExecutionStatus.Queued && execution.context.awaiting_faces
+      ? { label: 'Esperando caras', tone: BadgeTone.Warning, Icon: ScanFace }
+      : statusConfig[execution.status]
   const liveElapsed = useElapsed(execution.startedAt, execution.finishedAt)
 
   const done = Boolean(execution.finishedAt)

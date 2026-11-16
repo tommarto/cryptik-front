@@ -20,7 +20,8 @@ import {
   type SeedanceContext,
   type WorkflowExecution,
 } from '../../types/workflow'
-import { countByType, type LibraryAsset } from '../../types/media'
+import { AssetKind, countByType, type LibraryAsset } from '../../types/media'
+import { useFaces } from '../../hooks/useFaces'
 import { mediaService } from '../../services/mediaService'
 import { labelAssets } from '../../utils/assetLabels'
 import {
@@ -52,7 +53,19 @@ export function SeedanceScreen() {
   const createSeedance = useCreateSeedance()
   const counts = countByType(assets)
 
-  const labeled = labelAssets(assets)
+  const hasFaces = assets.some((asset) => asset.kind === AssetKind.Face)
+  const { data: faceLibrary } = useFaces(hasFaces)
+  const liveStatus = new Map(
+    (faceLibrary?.faces ?? []).map((face) => [face.id, face.syncStatus]),
+  )
+
+  const labeled = labelAssets(
+    assets.map((asset) =>
+      asset.kind === AssetKind.Face
+        ? { ...asset, syncStatus: liveStatus.get(asset.id) ?? asset.syncStatus }
+        : asset,
+    ),
+  )
 
   async function generate() {
     if (!prompt.trim()) return
@@ -62,7 +75,10 @@ export function SeedanceScreen() {
       const execution = await createSeedance.mutateAsync({
         prompt,
         taskName,
-        assetMediaIds: assets.map((asset) => asset.id),
+        references: assets.map((asset) => ({
+          kind: asset.kind ?? AssetKind.Media,
+          id: asset.id,
+        })),
         duration:
           settings.duration === DurationMode.Auto ? -1 : settings.duration,
         aspectRatio: settings.aspectRatio,
@@ -106,7 +122,8 @@ export function SeedanceScreen() {
     })
 
     setSourceExecutionId(execution.id)
-    const expected = context.asset_media_ids?.length ?? 0
+    const expected =
+      context.references?.length ?? context.asset_media_ids?.length ?? 0
     try {
       const loaded = await mediaService.byExecution(execution.id)
       setAssets(loaded)
@@ -159,6 +176,7 @@ export function SeedanceScreen() {
         disabledReason={(asset) => assetLimitReason(counts, asset.mediaType)}
         acceptedTypes={ACCEPTED_UPLOAD_TYPES}
         fileRejectionReason={fileRejectionReason}
+        facesEnabled
       />
 
       <GenerationLayout

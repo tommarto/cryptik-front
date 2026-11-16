@@ -93,14 +93,14 @@ export const workflowService = {
 
   createSeedance: async (
     payload: CreateSeedancePayload,
-  ): Promise<{ id: string }> => {
+  ): Promise<{ id: string; awaiting_faces?: boolean }> => {
     const { data, error } = await supabase.functions.invoke(
       'create-seedance-execution',
       {
         body: {
           prompt: payload.prompt.trim(),
           name: payload.taskName.trim() || undefined,
-          assetMediaIds: payload.assetMediaIds,
+          references: payload.references,
           duration: payload.duration,
           aspectRatio: payload.aspectRatio,
           resolution: payload.resolution,
@@ -110,7 +110,7 @@ export const workflowService = {
     )
 
     if (error) throw new Error(await readFunctionError(error))
-    return data.execution as { id: string }
+    return data.execution as { id: string; awaiting_faces?: boolean }
   },
 
   getVideoUrl: async (executionId: string, download = false): Promise<string> => {
